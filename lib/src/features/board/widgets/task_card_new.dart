@@ -40,7 +40,7 @@ class TaskCard extends StatelessWidget {
 
   Widget _buildCardContent(BuildContext context, {bool isDragging = false}) {
     final borderColor = task.status.color.withAlpha(100);
-    
+
     return Container(
       width: isDragging ? 260 : null,
       margin: const EdgeInsets.only(bottom: 10),
@@ -162,7 +162,10 @@ class TaskCard extends StatelessWidget {
                               children: [
                                 Icon(Icons.delete, size: 18, color: Colors.red),
                                 SizedBox(width: 8),
-                                Text('Delete', style: TextStyle(color: Colors.red)),
+                                Text(
+                                  'Delete',
+                                  style: TextStyle(color: Colors.red),
+                                ),
                               ],
                             ),
                           ),
@@ -174,20 +177,20 @@ class TaskCard extends StatelessWidget {
                   Text(
                     task.title,
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w700,
-                          fontSize: 16,
-                          height: 1.3,
-                        ),
+                      fontWeight: FontWeight.w700,
+                      fontSize: 16,
+                      height: 1.3,
+                    ),
                   ),
                   if (task.description.isNotEmpty) ...[
                     const SizedBox(height: 8),
                     Text(
                       task.description,
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: Theme.of(context).textTheme.bodySmall?.color,
-                            fontSize: 13,
-                            height: 1.4,
-                          ),
+                        color: Theme.of(context).textTheme.bodySmall?.color,
+                        fontSize: 13,
+                        height: 1.4,
+                      ),
                       maxLines: 3,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -218,7 +221,9 @@ class TaskCard extends StatelessWidget {
                     children: [
                       Icon(
                         Icons.drag_indicator,
-                        color: Theme.of(context).textTheme.bodySmall?.color?.withAlpha(100),
+                        color: Theme.of(
+                          context,
+                        ).textTheme.bodySmall?.color?.withAlpha(100),
                         size: 20,
                       ),
                     ],

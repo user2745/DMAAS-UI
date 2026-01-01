@@ -32,7 +32,7 @@ class _TaskColumnState extends State<TaskColumn> {
   Widget build(BuildContext context) {
     final borderColor = widget.status.color.withAlpha(80);
     final highlightColor = widget.status.color.withAlpha(120);
-    
+
     return DragTarget<Task>(
       onWillAcceptWithDetails: (details) {
         return details.data.status != widget.status;
@@ -55,7 +55,9 @@ class _TaskColumnState extends State<TaskColumn> {
           margin: const EdgeInsets.only(right: 12),
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            color: Theme.of(context).cardColor.withAlpha(_isDraggingOver ? 255 : 230),
+            color: Theme.of(
+              context,
+            ).cardColor.withAlpha(_isDraggingOver ? 255 : 230),
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
               color: _isDraggingOver ? highlightColor : borderColor,
@@ -88,10 +90,16 @@ class _TaskColumnState extends State<TaskColumn> {
                                   task: task,
                                   onMoveLeft: task.status.previous == null
                                       ? null
-                                      : () => widget.onMove(task.id, task.status.previous!),
+                                      : () => widget.onMove(
+                                          task.id,
+                                          task.status.previous!,
+                                        ),
                                   onMoveRight: task.status.next == null
                                       ? null
-                                      : () => widget.onMove(task.id, task.status.next!),
+                                      : () => widget.onMove(
+                                          task.id,
+                                          task.status.next!,
+                                        ),
                                   onDelete: () => widget.onRemove(task.id),
                                   onEdit: () => widget.onEdit(task),
                                 ),
@@ -130,10 +138,10 @@ class _TaskColumnState extends State<TaskColumn> {
           child: Text(
             widget.status.label,
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w800,
-                  fontSize: 15,
-                  letterSpacing: 0.5,
-                ),
+              fontWeight: FontWeight.w800,
+              fontSize: 15,
+              letterSpacing: 0.5,
+            ),
           ),
         ),
         Container(
@@ -141,7 +149,10 @@ class _TaskColumnState extends State<TaskColumn> {
           decoration: BoxDecoration(
             color: widget.status.color.withAlpha(30),
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: widget.status.color.withAlpha(80), width: 1),
+            border: Border.all(
+              color: widget.status.color.withAlpha(80),
+              width: 1,
+            ),
           ),
           child: Text(
             '${widget.tasks.length}',
@@ -156,10 +167,7 @@ class _TaskColumnState extends State<TaskColumn> {
         IconButton(
           tooltip: 'Add to ${widget.status.label}',
           onPressed: widget.onAdd,
-          icon: Icon(
-            Icons.add_circle,
-            color: widget.status.color,
-          ),
+          icon: Icon(Icons.add_circle, color: widget.status.color),
           iconSize: 24,
         ),
       ],
@@ -198,17 +206,17 @@ class _EmptyColumn extends StatelessWidget {
           Text(
             'No items in ${status.label}',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Theme.of(context).textTheme.bodySmall?.color,
-                  fontWeight: FontWeight.w600,
-                ),
+              color: Theme.of(context).textTheme.bodySmall?.color,
+              fontWeight: FontWeight.w600,
+            ),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 6),
           Text(
             'Drag tasks here or click + to add',
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  fontSize: 11,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(fontSize: 11),
             textAlign: TextAlign.center,
           ),
         ],
