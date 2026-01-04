@@ -3,7 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'features/board/cubit/task_board_cubit.dart';
 import 'features/board/cubit/search_cubit.dart';
-import 'features/board/data/mock_tasks.dart';
+import 'features/board/data/task_api_service.dart';
 import 'features/navigation/main_navigation_page.dart';
 import 'theme/app_theme.dart';
 
@@ -15,7 +15,9 @@ class TaskBoardApp extends StatelessWidget {
     return MultiBlocProvider(
       providers: [
         BlocProvider<TaskBoardCubit>(
-          create: (_) => TaskBoardCubit(seedTasks: mockTasks),
+          create: (_) => TaskBoardCubit(
+            apiService: TaskApiService(),
+          )..loadTasks(),
         ),
         BlocProvider<SearchCubit>(create: (_) => SearchCubit()),
       ],

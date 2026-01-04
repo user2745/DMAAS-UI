@@ -1,30 +1,48 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
 
-enum TaskStatus { backlog, inProgress, review, done }
+enum TaskStatus { todo, inProgress, done }
 
 extension TaskStatusX on TaskStatus {
   String get label {
     switch (this) {
-      case TaskStatus.backlog:
-        return 'Backlog';
+      case TaskStatus.todo:
+        return 'To Do';
       case TaskStatus.inProgress:
         return 'In Progress';
-      case TaskStatus.review:
-        return 'Review';
       case TaskStatus.done:
         return 'Done';
     }
   }
 
+  String get value {
+    switch (this) {
+      case TaskStatus.todo:
+        return 'todo';
+      case TaskStatus.inProgress:
+        return 'in_progress';
+      case TaskStatus.done:
+        return 'done';
+    }
+  }
+
+  static TaskStatus fromString(String value) {
+    switch (value) {
+      case 'in_progress':
+        return TaskStatus.inProgress;
+      case 'done':
+        return TaskStatus.done;
+      default:
+        return TaskStatus.todo;
+    }
+  }
+
   Color get color {
     switch (this) {
-      case TaskStatus.backlog:
+      case TaskStatus.todo:
         return const Color(0xFF58A6FF); // Blue
       case TaskStatus.inProgress:
         return const Color(0xFFBB86FC); // Purple
-      case TaskStatus.review:
-        return const Color(0xFFFF9800); // Orange
       case TaskStatus.done:
         return const Color(0xFF3FB950); // Green
     }
@@ -32,24 +50,20 @@ extension TaskStatusX on TaskStatus {
 
   TaskStatus? get previous {
     switch (this) {
-      case TaskStatus.backlog:
+      case TaskStatus.todo:
         return null;
       case TaskStatus.inProgress:
-        return TaskStatus.backlog;
-      case TaskStatus.review:
-        return TaskStatus.inProgress;
+        return TaskStatus.todo;
       case TaskStatus.done:
-        return TaskStatus.review;
+        return TaskStatus.inProgress;
     }
   }
 
   TaskStatus? get next {
     switch (this) {
-      case TaskStatus.backlog:
+      case TaskStatus.todo:
         return TaskStatus.inProgress;
       case TaskStatus.inProgress:
-        return TaskStatus.review;
-      case TaskStatus.review:
         return TaskStatus.done;
       case TaskStatus.done:
         return null;
@@ -61,20 +75,42 @@ class Task extends Equatable {
   const Task({
     required this.id,
     required this.title,
-    required this.description,
     required this.status,
     required this.createdAt,
+    this.description,
     this.dueDate,
-    this.assignee,
   });
 
   final String id;
   final String title;
-  final String description;
+  final String? description;
   final TaskStatus status;
   final DateTime createdAt;
   final DateTime? dueDate;
-  final String? assignee;
+
+  factory Task.fromJson(Map<String, dynamic> json) {
+    return Task(
+      id: json['_id'] ?? json['id'] ?? '',
+      title: json['title'] ?? '',
+      description: json['description'],
+      status: TaskStatusX.fromString(json['status'] ?? 'todo'),
+      createdAt: json['createdAt'] != null
+          ? DateTime.parse(json['createdAt'])
+          : DateTime.now(),
+      dueDate: json['dueDate'] != null
+          ? DateTime.parse(json['dueDate'])
+          : null,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'title': title,
+      'description': description,
+      'status': status.value,
+      if (dueDate != null) 'dueDate': dueDate?.toIso8601String(),
+    };
+  }
 
   Task copyWith({
     String? id,
@@ -83,7 +119,6 @@ class Task extends Equatable {
     TaskStatus? status,
     DateTime? createdAt,
     DateTime? dueDate,
-    String? assignee,
   }) {
     return Task(
       id: id ?? this.id,
@@ -92,7 +127,6 @@ class Task extends Equatable {
       status: status ?? this.status,
       createdAt: createdAt ?? this.createdAt,
       dueDate: dueDate ?? this.dueDate,
-      assignee: assignee ?? this.assignee,
     );
   }
 
@@ -104,6 +138,6 @@ class Task extends Equatable {
     status,
     createdAt,
     dueDate,
-    assignee,
   ];
 }
+

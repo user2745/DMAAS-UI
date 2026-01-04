@@ -49,10 +49,10 @@ class TaskCard extends StatelessWidget {
                 ),
               ],
             ),
-            if (task.description.isNotEmpty) ...[
+            if ((task.description ?? '').isNotEmpty) ...[
               const SizedBox(height: 6),
               Text(
-                task.description,
+                task.description ?? '',
                 style: Theme.of(context).textTheme.bodyMedium,
                 maxLines: 3,
                 overflow: TextOverflow.ellipsis,
@@ -64,12 +64,6 @@ class TaskCard extends StatelessWidget {
               runSpacing: 4,
               children: [
                 _StatusChip(status: task.status),
-                if (task.assignee != null && task.assignee!.isNotEmpty)
-                  Chip(
-                    padding: const EdgeInsets.symmetric(horizontal: 4),
-                    label: Text('Owner: ${task.assignee}'),
-                    avatar: const Icon(Icons.person_outline, size: 18),
-                  ),
                 Chip(
                   label: Text('Created ${_timeAgo(task.createdAt)}'),
                   avatar: const Icon(Icons.schedule, size: 18),

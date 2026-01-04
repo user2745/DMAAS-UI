@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../models/task.dart';
+import 'task_detail_modal.dart';
 
 class TaskCard extends StatelessWidget {
   const TaskCard({
@@ -34,7 +35,10 @@ class TaskCard extends StatelessWidget {
         opacity: 0.3,
         child: _buildCardContent(context),
       ),
-      child: _buildCardContent(context),
+      child: GestureDetector(
+        onTap: () => TaskDetailModal.show(context, task: task),
+        child: _buildCardContent(context),
+      ),
     );
   }
 
@@ -182,10 +186,10 @@ class TaskCard extends StatelessWidget {
                       height: 1.3,
                     ),
                   ),
-                  if (task.description.isNotEmpty) ...[
+                  if ((task.description ?? '').isNotEmpty) ...[
                     const SizedBox(height: 8),
                     Text(
-                      task.description,
+                      task.description ?? '',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         color: Theme.of(context).textTheme.bodySmall?.color,
                         fontSize: 13,
@@ -200,13 +204,6 @@ class TaskCard extends StatelessWidget {
                     spacing: 6,
                     runSpacing: 6,
                     children: [
-                      if (task.assignee != null && task.assignee!.isNotEmpty)
-                        _buildPill(
-                          context,
-                          icon: Icons.person_outline,
-                          label: task.assignee!,
-                          color: const Color(0xFF58A6FF),
-                        ),
                       _buildPill(
                         context,
                         icon: Icons.schedule,

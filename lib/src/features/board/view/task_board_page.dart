@@ -17,6 +17,41 @@ class TaskBoardPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocBuilder<TaskBoardCubit, TaskBoardState>(
       builder: (context, state) {
+        if (state.isLoading && state.tasks.isEmpty) {
+          return const Center(
+            child: CircularProgressIndicator(),
+          );
+        }
+
+        if (state.error != null && state.tasks.isEmpty) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.error_outline, size: 64, color: Colors.red),
+                const SizedBox(height: 16),
+                Text(
+                  'Error loading tasks',
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  state.error ?? 'Unknown error',
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+                const SizedBox(height: 16),
+                ElevatedButton(
+                  onPressed: () {
+                    context.read<TaskBoardCubit>().loadTasks();
+                  },
+                  child: const Text('Retry'),
+                ),
+              ],
+            ),
+          );
+        }
+
         return BlocBuilder<SearchCubit, SearchState>(
           builder: (context, searchState) {
             final searchCubit = context.read<SearchCubit>();
@@ -26,7 +61,7 @@ class TaskBoardPage extends StatelessWidget {
             final filteredGrouped = <TaskStatus, List<Task>>{};
             for (final entry in grouped.entries) {
               filteredGrouped[entry.key] = entry.value.where((task) {
-                final searchText = '${task.title} ${task.description} ${task.assignee ?? ''}'
+                final searchText = '${task.title} ${task.description ?? ''}'
                     .toLowerCase();
                 return searchCubit.matchesSearch(searchText);
               }).toList();

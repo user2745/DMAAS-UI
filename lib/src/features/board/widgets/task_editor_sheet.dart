@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:uuid/uuid.dart';
 
 import '../cubit/task_board_cubit.dart';
 import '../models/task.dart';
@@ -38,8 +37,8 @@ class _TaskEditorSheetState extends State<TaskEditorSheet> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _titleController;
   late final TextEditingController _descriptionController;
-  late final TextEditingController _assigneeController;
   late TaskStatus _status;
+  late DateTime? _dueDate;
 
   @override
   void initState() {
@@ -48,17 +47,14 @@ class _TaskEditorSheetState extends State<TaskEditorSheet> {
     _descriptionController = TextEditingController(
       text: widget.task?.description ?? '',
     );
-    _assigneeController = TextEditingController(
-      text: widget.task?.assignee ?? '',
-    );
-    _status = widget.task?.status ?? widget.initialStatus ?? TaskStatus.backlog;
+    _status = widget.task?.status ?? widget.initialStatus ?? TaskStatus.todo;
+    _dueDate = widget.task?.dueDate;
   }
 
   @override
   void dispose() {
     _titleController.dispose();
     _descriptionController.dispose();
-    _assigneeController.dispose();
     super.dispose();
   }
 
@@ -107,11 +103,6 @@ class _TaskEditorSheetState extends State<TaskEditorSheet> {
               maxLines: 3,
             ),
             const SizedBox(height: 12),
-            TextFormField(
-              controller: _assigneeController,
-              decoration: const InputDecoration(labelText: 'Owner (optional)'),
-            ),
-            const SizedBox(height: 12),
             DropdownButtonFormField<TaskStatus>(
               value: _status,
               decoration: const InputDecoration(labelText: 'Status'),
@@ -129,6 +120,29 @@ class _TaskEditorSheetState extends State<TaskEditorSheet> {
                 }
               },
             ),
+            const SizedBox(height: 12),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              title: Text(_dueDate == null 
+                ? 'No due date'
+                : 'Due: ${_dueDate!.toString().split(' ')[0]}'),
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (_dueDate != null)
+                    IconButton(
+                      icon: const Icon(Icons.clear),
+                      onPressed: () {
+                        setState(() => _dueDate = null);
+                      },
+                    ),
+                  IconButton(
+                    icon: const Icon(Icons.calendar_today),
+                    onPressed: () => _pickDate(context),
+                  ),
+                ],
+              ),
+            ),
             const SizedBox(height: 20),
             SizedBox(
               width: double.infinity,
@@ -144,31 +158,39 @@ class _TaskEditorSheetState extends State<TaskEditorSheet> {
     );
   }
 
+  Future<void> _pickDate(BuildContext context) async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _dueDate ?? DateTime.now(),
+      firstDate: DateTime.now().subtract(const Duration(days: 1)),
+      lastDate: DateTime.now().add(const Duration(days: 365)),
+    );
+    if (picked != null) {
+      setState(() => _dueDate = picked);
+    }
+  }
+
   void _submit(BuildContext context) {
     if (!_formKey.currentState!.validate()) {
       return;
     }
 
     final cubit = context.read<TaskBoardCubit>();
+    final trimmedTitle = _titleController.text.trim();
     final trimmedDescription = _descriptionController.text.trim();
-    final trimmedAssignee = _assigneeController.text.trim();
 
     if (widget.task == null) {
-      final task = Task(
-        id: const Uuid().v4(),
-        title: _titleController.text.trim(),
-        description: trimmedDescription,
-        status: _status,
-        createdAt: DateTime.now(),
-        assignee: trimmedAssignee.isEmpty ? null : trimmedAssignee,
+      cubit.addTask(
+        title: trimmedTitle,
+        description: trimmedDescription.isEmpty ? null : trimmedDescription,
+        dueDate: _dueDate,
       );
-      cubit.addTask(task);
     } else {
       final task = widget.task!.copyWith(
-        title: _titleController.text.trim(),
-        description: trimmedDescription,
+        title: trimmedTitle,
+        description: trimmedDescription.isEmpty ? null : trimmedDescription,
         status: _status,
-        assignee: trimmedAssignee.isEmpty ? null : trimmedAssignee,
+        dueDate: _dueDate,
       );
       cubit.updateTask(task);
     }
