@@ -8,7 +8,7 @@ class TaskApiService {
   final http.Client httpClient;
 
   TaskApiService({
-    this.baseUrl = const String.fromEnvironment('API_BASE_URL', defaultValue: 'http://localhost:3302'),
+    this.baseUrl = const String.fromEnvironment('API_BASE_URL', defaultValue: 'http://74.208.213.94:3302'),
     http.Client? httpClient,
   }) : httpClient = httpClient ?? http.Client();
 
