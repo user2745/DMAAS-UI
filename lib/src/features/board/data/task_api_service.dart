@@ -8,7 +8,7 @@ class TaskApiService {
   final http.Client httpClient;
 
   TaskApiService({
-    this.baseUrl = const String.fromEnvironment('API_BASE_URL', defaultValue: 'https://dmaas.athletex.io:3302'),
+    this.baseUrl = const String.fromEnvironment('API_BASE_URL', defaultValue: 'https://dmaas.athletex.io'),
     http.Client? httpClient,
   }) : httpClient = httpClient ?? http.Client();
 
