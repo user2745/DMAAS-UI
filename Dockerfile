@@ -13,7 +13,7 @@ RUN flutter pub get
 COPY . .
 
 # Build argument for API base URL
-ARG API_BASE_URL=https://nova-server.tailbc5c8.ts.net
+ARG API_BASE_URL=
 
 # Build the web application with the API_BASE_URL compile-time constant
 RUN flutter build web --release --dart-define=API_BASE_URL=${API_BASE_URL}

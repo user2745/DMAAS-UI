@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'features/board/cubit/task_board_cubit.dart';
 import 'features/board/cubit/search_cubit.dart';
 import 'features/board/data/task_api_service.dart';
+import 'features/tasks_list/cubit/tasks_list_cubit.dart';
 import 'features/navigation/main_navigation_page.dart';
 import 'theme/app_theme.dart';
 
@@ -20,6 +21,9 @@ class TaskBoardApp extends StatelessWidget {
           )..loadTasks(),
         ),
         BlocProvider<SearchCubit>(create: (_) => SearchCubit()),
+        BlocProvider<TasksListCubit>(
+          create: (_) => TasksListCubit(),
+        ),
       ],
       child: MaterialApp(
         title: 'DMAAS - Decision Making & Activities Accounting System',

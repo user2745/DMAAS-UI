@@ -3,22 +3,27 @@ import 'package:http/http.dart' as http;
 
 import '../models/task.dart';
 
-class TaskApiService {
+class TaskListApiService {
   final String baseUrl;
   final http.Client httpClient;
 
-  TaskApiService({
-    this.baseUrl = const String.fromEnvironment('API_BASE_URL', defaultValue: 'https://dmaas.athletex.io'),
+  TaskListApiService({
+    this.baseUrl = const String.fromEnvironment(
+      'API_BASE_URL',
+      defaultValue: 'http://dmaas.athletex.io:3302',
+    ),
     http.Client? httpClient,
   }) : httpClient = httpClient ?? http.Client();
 
-  Future<List<Task>> fetchAllTasks() async {
+  Future<List<TaskListItem>> fetchAllTasks() async {
     try {
-      final response = await httpClient.get(Uri.parse('$baseUrl/tasks'));
+      final response = await httpClient.get(
+        Uri.parse('$baseUrl/tasks'),
+      );
 
       if (response.statusCode == 200) {
         final List<dynamic> data = jsonDecode(response.body);
-        return data.map((json) => Task.fromJson(json)).toList();
+        return data.map((json) => TaskListItem.fromJson(json)).toList();
       } else {
         throw Exception('Failed to load tasks: ${response.statusCode}');
       }
@@ -27,11 +32,29 @@ class TaskApiService {
     }
   }
 
-  Future<Task> createTask({
+  Future<List<TaskListItem>> fetchTasksByCategory(String categoryId) async {
+    try {
+      final response = await httpClient.get(
+        Uri.parse('$baseUrl/tasks?categoryId=$categoryId'),
+      );
+
+      if (response.statusCode == 200) {
+        final List<dynamic> data = jsonDecode(response.body);
+        return data.map((json) => TaskListItem.fromJson(json)).toList();
+      } else {
+        throw Exception('Failed to load tasks: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw Exception('Error fetching tasks: $e');
+    }
+  }
+
+  Future<TaskListItem> createTask({
     required String title,
     String? description,
     String status = 'todo',
     DateTime? dueDate,
+    String? categoryId,
   }) async {
     try {
       final payload = {
@@ -39,6 +62,7 @@ class TaskApiService {
         if (description != null) 'description': description,
         'status': status,
         if (dueDate != null) 'dueDate': dueDate.toIso8601String(),
+        if (categoryId != null) 'categoryId': categoryId,
       };
 
       final response = await httpClient.post(
@@ -48,7 +72,8 @@ class TaskApiService {
       );
 
       if (response.statusCode == 201 || response.statusCode == 200) {
-        return Task.fromJson(jsonDecode(response.body));
+        final json = jsonDecode(response.body);
+        return TaskListItem.fromJson(json);
       } else {
         throw Exception('Failed to create task: ${response.statusCode}');
       }
@@ -57,37 +82,32 @@ class TaskApiService {
     }
   }
 
-  Future<Task> updateTask({
+  Future<TaskListItem> updateTask({
     required String taskId,
-    String? title,
+    required String title,
     String? description,
     String? status,
     DateTime? dueDate,
-    Map<String, Object?>? fieldValues,
+    String? categoryId,
   }) async {
     try {
       final payload = {
-        if (title != null) 'title': title,
+        'title': title,
         if (description != null) 'description': description,
         if (status != null) 'status': status,
         if (dueDate != null) 'dueDate': dueDate.toIso8601String(),
-        if (fieldValues != null)
-          'fieldValues': fieldValues.map((key, value) {
-            if (value is DateTime) {
-              return MapEntry(key, value.toIso8601String());
-            }
-            return MapEntry(key, value);
-          }),
+        if (categoryId != null) 'categoryId': categoryId,
       };
 
-      final response = await httpClient.patch(
+      final response = await httpClient.put(
         Uri.parse('$baseUrl/tasks/$taskId'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode(payload),
       );
 
       if (response.statusCode == 200) {
-        return Task.fromJson(jsonDecode(response.body));
+        final json = jsonDecode(response.body);
+        return TaskListItem.fromJson(json);
       } else {
         throw Exception('Failed to update task: ${response.statusCode}');
       }

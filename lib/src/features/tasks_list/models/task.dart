@@ -71,15 +71,15 @@ extension TaskStatusX on TaskStatus {
   }
 }
 
-class Task extends Equatable {
-  const Task({
+class TaskListItem extends Equatable {
+  const TaskListItem({
     required this.id,
     required this.title,
     required this.status,
     required this.createdAt,
     this.description,
     this.dueDate,
-    this.fieldValues,
+    this.categoryId,
   });
 
   final String id;
@@ -88,10 +88,10 @@ class Task extends Equatable {
   final TaskStatus status;
   final DateTime createdAt;
   final DateTime? dueDate;
-  final Map<String, dynamic>? fieldValues;
+  final String? categoryId;
 
-  factory Task.fromJson(Map<String, dynamic> json) {
-    return Task(
+  factory TaskListItem.fromJson(Map<String, dynamic> json) {
+    return TaskListItem(
       id: json['_id'] ?? json['id'] ?? '',
       title: json['title'] ?? '',
       description: json['description'],
@@ -100,11 +100,7 @@ class Task extends Equatable {
           ? DateTime.parse(json['createdAt'])
           : DateTime.now(),
       dueDate: json['dueDate'] != null ? DateTime.parse(json['dueDate']) : null,
-      fieldValues: json['fieldValues'] is Map<String, dynamic>
-          ? json['fieldValues'] as Map<String, dynamic>
-          : (json['fieldValues'] is Map
-                ? Map<String, dynamic>.from(json['fieldValues'] as Map)
-                : null),
+      categoryId: json['categoryId'],
     );
   }
 
@@ -114,26 +110,27 @@ class Task extends Equatable {
       'description': description,
       'status': status.value,
       if (dueDate != null) 'dueDate': dueDate?.toIso8601String(),
+      if (categoryId != null) 'categoryId': categoryId,
     };
   }
 
-  Task copyWith({
+  TaskListItem copyWith({
     String? id,
     String? title,
     String? description,
     TaskStatus? status,
     DateTime? createdAt,
     DateTime? dueDate,
-    Map<String, dynamic>? fieldValues,
+    String? categoryId,
   }) {
-    return Task(
+    return TaskListItem(
       id: id ?? this.id,
       title: title ?? this.title,
       description: description ?? this.description,
       status: status ?? this.status,
       createdAt: createdAt ?? this.createdAt,
       dueDate: dueDate ?? this.dueDate,
-      fieldValues: fieldValues ?? this.fieldValues,
+      categoryId: categoryId ?? this.categoryId,
     );
   }
 
@@ -145,6 +142,6 @@ class Task extends Equatable {
     status,
     createdAt,
     dueDate,
-    fieldValues,
+    categoryId,
   ];
 }

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../board/view/task_board_page.dart';
 import '../today/today_tasks_page.dart';
-import '../priorities/quarterly_priorities_page.dart';
+import '../tasks_list/view/tasks_list_page.dart';
 
 class MainNavigationPage extends StatefulWidget {
   const MainNavigationPage({super.key});
@@ -55,7 +55,7 @@ class _MainNavigationPageState extends State<MainNavigationPage>
           tabs: const [
             Tab(icon: Icon(Icons.view_week), text: 'Weekly Activities'),
             Tab(icon: Icon(Icons.today), text: "Today's Tasks"),
-            Tab(icon: Icon(Icons.emoji_events), text: 'Quarterly Priorities'),
+            Tab(icon: Icon(Icons.task_alt), text: 'Tasks List'),
           ],
         ),
       ),
@@ -64,7 +64,7 @@ class _MainNavigationPageState extends State<MainNavigationPage>
         children: const [
           TaskBoardPage(),
           TodayTasksPage(),
-          QuarterlyPrioritiesPage(),
+          TasksListPage(),
         ],
       ),
     );
