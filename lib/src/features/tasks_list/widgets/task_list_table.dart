@@ -32,7 +32,7 @@ class TaskListTable extends StatefulWidget {
   final Function(String) onTaskDelete;
   final VoidCallback onAddField;
   final void Function(TaskSortKey) onSortChanged;
-  final VoidCallback onAddTask;
+  final Function(String title) onAddTask;
   final void Function(String taskId, String fieldId, Object? value)?
   onFieldValueChange;
 
@@ -42,6 +42,22 @@ class TaskListTable extends StatefulWidget {
 
 class _TaskListTableState extends State<TaskListTable> {
   int? _hoveredRowIndex;
+  bool _isAddingTask = false;
+  late TextEditingController _newTaskController;
+  final FocusNode _newTaskFocusNode = FocusNode();
+
+  @override
+  void initState() {
+    super.initState();
+    _newTaskController = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    _newTaskController.dispose();
+    _newTaskFocusNode.dispose();
+    super.dispose();
+  }
 
   int? _sortColumnIndex() {
     switch (widget.sortKey) {
@@ -453,36 +469,70 @@ class _TaskListTableState extends State<TaskListTable> {
                 DataCell(
                   SizedBox(
                     width: 280,
-                    child: InkWell(
-                      onTap: widget.onAddTask,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 8,
-                        ),
-                        decoration: BoxDecoration(
-                          border: Border.all(
-                            color: Colors.grey[300]!,
-                            width: 1,
-                          ),
-                          borderRadius: BorderRadius.circular(5),
-                          color: Colors.grey[50],
-                        ),
-                        child: Row(
-                          children: [
-                            Icon(Icons.add, size: 16, color: Colors.grey[500]),
-                            const SizedBox(width: 8),
-                            Text(
-                              'Add new task...',
-                              style: TextStyle(
-                                color: Colors.grey[500],
-                                fontSize: 13,
+                    child: _isAddingTask
+                        ? _InlineTaskEditor(
+                            controller: _newTaskController,
+                            focusNode: _newTaskFocusNode,
+                            onChanged: (_) => setState(() {}),
+                            onSubmit: (title) {
+                              if (title.isNotEmpty) {
+                                widget.onAddTask(title);
+                                setState(() {
+                                  _isAddingTask = false;
+                                  _newTaskController.clear();
+                                });
+                              }
+                            },
+                            onCancel: () {
+                              setState(() {
+                                _isAddingTask = false;
+                                _newTaskController.clear();
+                              });
+                            },
+                            title: _newTaskController.text,
+                          )
+                        : InkWell(
+                            onTap: () {
+                              setState(() {
+                                _isAddingTask = true;
+                              });
+                              Future.delayed(
+                                const Duration(milliseconds: 100),
+                                () => _newTaskFocusNode.requestFocus(),
+                              );
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 8,
+                              ),
+                              decoration: BoxDecoration(
+                                border: Border.all(
+                                  color: Colors.grey[300]!,
+                                  width: 1,
+                                ),
+                                borderRadius: BorderRadius.circular(5),
+                                color: Colors.grey[50],
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.add,
+                                    size: 16,
+                                    color: Colors.grey[500],
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'Add new task...',
+                                    style: TextStyle(
+                                      color: Colors.grey[500],
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
-                          ],
-                        ),
-                      ),
-                    ),
+                          ),
                   ),
                 ),
                 const DataCell(SizedBox(width: 150)),
@@ -984,6 +1034,194 @@ class _AssigneesCell extends StatelessWidget {
           onPressed: onAdd,
         ),
       ],
+    );
+  }
+}
+
+class _InlineTaskEditor extends StatefulWidget {
+  const _InlineTaskEditor({
+    required this.controller,
+    required this.focusNode,
+    required this.onChanged,
+    required this.onSubmit,
+    required this.onCancel,
+    required this.title,
+  });
+
+  final TextEditingController controller;
+  final FocusNode focusNode;
+  final Function(String) onChanged;
+  final Function(String) onSubmit;
+  final VoidCallback onCancel;
+  final String title;
+
+  @override
+  State<_InlineTaskEditor> createState() => _InlineTaskEditorState();
+}
+
+class _InlineTaskEditorState extends State<_InlineTaskEditor> {
+  late OverlayEntry? _overlayEntry;
+  final GlobalKey _editorKey = GlobalKey();
+
+  @override
+  void initState() {
+    super.initState();
+    widget.focusNode.addListener(_onFocusChange);
+  }
+
+  @override
+  void dispose() {
+    widget.focusNode.removeListener(_onFocusChange);
+    _overlayEntry?.remove();
+    super.dispose();
+  }
+
+  void _onFocusChange() {
+    if (widget.focusNode.hasFocus) {
+      _showOptionsOverlay();
+    } else {
+      _overlayEntry?.remove();
+      _overlayEntry = null;
+    }
+  }
+
+  void _showOptionsOverlay() {
+    final renderBox =
+        _editorKey.currentContext?.findRenderObject() as RenderBox?;
+    if (renderBox == null) return;
+
+    final offset = renderBox.localToGlobal(Offset.zero);
+
+    _overlayEntry = OverlayEntry(
+      builder: (context) {
+        return Positioned(
+          left: offset.dx,
+          top: offset.dy + 56,
+          width: 280,
+          child: Material(
+            elevation: 8,
+            borderRadius: BorderRadius.circular(8),
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.blue.shade400, width: 1.5),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (widget.title.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.add_circle_outline,
+                            size: 18,
+                            color: Colors.blue.shade400,
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              'Create "${widget.title}"',
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: Colors.grey[800],
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  if (widget.title.isEmpty)
+                    Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: Text(
+                        'Start typing to create a task',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Colors.grey[500],
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+    Overlay.of(context).insert(_overlayEntry!);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      key: _editorKey,
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.blue.shade400, width: 1.5),
+        borderRadius: BorderRadius.circular(5),
+        color: Colors.blue.shade50,
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: TextField(
+              controller: widget.controller,
+              focusNode: widget.focusNode,
+              decoration: InputDecoration(
+                hintText: 'Add new task...',
+                hintStyle: TextStyle(color: Colors.grey[500]),
+                border: InputBorder.none,
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
+              ),
+              style: const TextStyle(fontSize: 13),
+              onChanged: widget.onChanged,
+              onSubmitted: (value) {
+                if (value.isNotEmpty) {
+                  widget.onSubmit(value);
+                }
+              },
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.only(right: 4),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SizedBox(
+                  width: 28,
+                  height: 28,
+                  child: IconButton(
+                    icon: const Icon(Icons.check, size: 16),
+                    color: Colors.blue.shade400,
+                    padding: EdgeInsets.zero,
+                    onPressed: widget.controller.text.isNotEmpty
+                        ? () => widget.onSubmit(widget.controller.text)
+                        : null,
+                  ),
+                ),
+                SizedBox(
+                  width: 28,
+                  height: 28,
+                  child: IconButton(
+                    icon: const Icon(Icons.close, size: 16),
+                    color: Colors.grey[500],
+                    padding: EdgeInsets.zero,
+                    onPressed: widget.onCancel,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

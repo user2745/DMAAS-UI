@@ -23,10 +23,7 @@ class _TasksListPageState extends State<TasksListPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Tasks List'),
-        elevation: 0,
-      ),
+      appBar: AppBar(title: const Text('Tasks List'), elevation: 0),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           _showCreateTaskDialog(context);
@@ -37,9 +34,7 @@ class _TasksListPageState extends State<TasksListPage> {
       body: BlocBuilder<TasksListCubit, TasksListState>(
         builder: (context, state) {
           if (state.isLoading && state.tasks.isEmpty) {
-            return const Center(
-              child: CircularProgressIndicator(),
-            );
+            return const Center(child: CircularProgressIndicator());
           }
 
           if (state.error != null && state.tasks.isEmpty) {
@@ -130,8 +125,13 @@ class _TasksListPageState extends State<TasksListPage> {
                       onSortChanged: (key) {
                         context.read<TasksListCubit>().setSort(key);
                       },
-                      onAddTask: () {
-                        _showCreateTaskDialog(context);
+                      onAddTask: (title) {
+                        context.read<TasksListCubit>().createTask(
+                          title: title,
+                          description: null,
+                          dueDate: null,
+                          fieldId: null,
+                        );
                       },
                       onFieldValueChange: (taskId, fieldId, value) {
                         context.read<TasksListCubit>().updateTaskFieldValue(
@@ -179,7 +179,13 @@ class CreateTaskDialog extends StatefulWidget {
   });
 
   final List<Field> fields;
-  final Function(String title, String? description, DateTime? dueDate, String? fieldId) onSave;
+  final Function(
+    String title,
+    String? description,
+    DateTime? dueDate,
+    String? fieldId,
+  )
+  onSave;
 
   @override
   State<CreateTaskDialog> createState() => _CreateTaskDialogState();
@@ -247,10 +253,7 @@ class _CreateTaskDialogState extends State<CreateTaskDialog> {
                   ),
                 ),
                 items: [
-                  const DropdownMenuItem(
-                    value: null,
-                    child: Text('No Field'),
-                  ),
+                  const DropdownMenuItem(value: null, child: Text('No Field')),
                   ...widget.fields.map((field) {
                     return DropdownMenuItem(
                       value: field.id,
@@ -290,7 +293,8 @@ class _CreateTaskDialogState extends State<CreateTaskDialog> {
                       final date = await showDatePicker(
                         context: context,
                         initialDate:
-                            _selectedDueDate ?? DateTime.now().add(const Duration(days: 7)),
+                            _selectedDueDate ??
+                            DateTime.now().add(const Duration(days: 7)),
                         firstDate: DateTime.now(),
                         lastDate: DateTime.now().add(const Duration(days: 365)),
                       );
