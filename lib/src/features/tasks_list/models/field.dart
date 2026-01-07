@@ -29,7 +29,9 @@ class Field extends Equatable {
         (t) => t.name == (json['type'] as String? ?? FieldType.text.name),
         orElse: () => FieldType.text,
       ),
-      options: (json['options'] as List?)?.map((e) => e.toString()).toList() ?? const [],
+      options:
+          (json['options'] as List?)?.map((e) => e.toString()).toList() ??
+          const [],
       color: _colorFromHex(json['color'] as String? ?? '#6366F1'),
       createdAt: DateTime.parse(json['createdAt'] as String),
       updatedAt: json['updatedAt'] != null
@@ -39,14 +41,14 @@ class Field extends Equatable {
   }
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'name': name,
-      'type': type.name,
-      if (options.isNotEmpty) 'options': options,
-        'color': _colorToHex(color),
-        'createdAt': createdAt.toIso8601String(),
-        if (updatedAt != null) 'updatedAt': updatedAt!.toIso8601String(),
-      };
+    'id': id,
+    'name': name,
+    'type': type.name,
+    if (options.isNotEmpty) 'options': options,
+    'color': _colorToHex(color),
+    'createdAt': createdAt.toIso8601String(),
+    if (updatedAt != null) 'updatedAt': updatedAt!.toIso8601String(),
+  };
 
   Field copyWith({
     String? id,
@@ -56,19 +58,26 @@ class Field extends Equatable {
     Color? color,
     DateTime? createdAt,
     DateTime? updatedAt,
-  }) =>
-      Field(
-        id: id ?? this.id,
-        name: name ?? this.name,
-        type: type ?? this.type,
-        options: options ?? this.options,
-        color: color ?? this.color,
-        createdAt: createdAt ?? this.createdAt,
-        updatedAt: updatedAt ?? this.updatedAt,
-      );
+  }) => Field(
+    id: id ?? this.id,
+    name: name ?? this.name,
+    type: type ?? this.type,
+    options: options ?? this.options,
+    color: color ?? this.color,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+  );
 
   @override
-  List<Object?> get props => [id, name, type, options, color, createdAt, updatedAt];
+  List<Object?> get props => [
+    id,
+    name,
+    type,
+    options,
+    color,
+    createdAt,
+    updatedAt,
+  ];
 }
 
 enum FieldType { text, singleSelect, date }

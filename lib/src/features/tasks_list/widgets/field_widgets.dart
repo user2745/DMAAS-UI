@@ -5,10 +5,7 @@ import '../cubit/tasks_list_cubit.dart';
 import '../models/field.dart';
 
 class CreateFieldDialog extends StatefulWidget {
-  const CreateFieldDialog({
-    super.key,
-    this.initialField,
-  });
+  const CreateFieldDialog({super.key, this.initialField});
 
   final Field? initialField;
 
@@ -20,7 +17,8 @@ class _CreateFieldDialogState extends State<CreateFieldDialog> {
   late TextEditingController _nameController;
   late Color _selectedColor;
   FieldType _selectedType = FieldType.text;
-  late TextEditingController _optionsController;
+  late TextEditingController _optionInputController;
+  final List<String> _options = [];
 
   @override
   void initState() {
@@ -30,16 +28,33 @@ class _CreateFieldDialogState extends State<CreateFieldDialog> {
     );
     _selectedColor = widget.initialField?.color ?? fieldColors.first;
     _selectedType = widget.initialField?.type ?? FieldType.text;
-    _optionsController = TextEditingController(
-      text: widget.initialField?.options.join(', ') ?? '',
-    );
+    _optionInputController = TextEditingController();
+    if (widget.initialField?.options != null) {
+      _options.addAll(widget.initialField!.options);
+    }
   }
 
   @override
   void dispose() {
     _nameController.dispose();
-    _optionsController.dispose();
+    _optionInputController.dispose();
     super.dispose();
+  }
+
+  void _addOption() {
+    final option = _optionInputController.text.trim();
+    if (option.isNotEmpty && !_options.contains(option)) {
+      setState(() {
+        _options.add(option);
+        _optionInputController.clear();
+      });
+    }
+  }
+
+  void _removeOption(String option) {
+    setState(() {
+      _options.remove(option);
+    });
   }
 
   String _colorToHex(Color color) {
@@ -49,9 +64,7 @@ class _CreateFieldDialogState extends State<CreateFieldDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text(
-        widget.initialField == null ? 'Add Field' : 'Edit Field',
-      ),
+      title: Text(widget.initialField == null ? 'Add Field' : 'Edit Field'),
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -78,7 +91,10 @@ class _CreateFieldDialogState extends State<CreateFieldDialog> {
               ),
               items: const [
                 DropdownMenuItem(value: FieldType.text, child: Text('Text')),
-                DropdownMenuItem(value: FieldType.singleSelect, child: Text('Single Select')),
+                DropdownMenuItem(
+                  value: FieldType.singleSelect,
+                  child: Text('Single Select'),
+                ),
                 DropdownMenuItem(value: FieldType.date, child: Text('Date')),
               ],
               onChanged: (value) {
@@ -87,57 +103,61 @@ class _CreateFieldDialogState extends State<CreateFieldDialog> {
             ),
             if (_selectedType == FieldType.singleSelect) ...[
               const SizedBox(height: 16),
-              TextField(
-                controller: _optionsController,
-                decoration: InputDecoration(
-                  labelText: 'Options (comma separated)',
-                  hintText: 'e.g., Low, Medium, High',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-              ),
-            ],
-            const SizedBox(height: 24),
-            Text(
-              'Color',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            const SizedBox(height: 12),
-            Wrap(
-              spacing: 12,
-              runSpacing: 12,
-              children: fieldColors.map((color) {
-                final isSelected = color.value == _selectedColor.value;
-                return GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      _selectedColor = color;
-                    });
-                  },
-                  child: Container(
-                    width: 50,
-                    height: 50,
-                    decoration: BoxDecoration(
-                      color: color,
-                      shape: BoxShape.circle,
-                      border: isSelected
-                          ? Border.all(color: Colors.white, width: 3)
-                          : null,
-                      boxShadow: isSelected
-                          ? [
-                              BoxShadow(
-                                color: color.withOpacity(0.6),
-                                blurRadius: 8,
-                                spreadRadius: 2,
-                              ),
-                            ]
-                          : null,
+              Text('Options', style: Theme.of(context).textTheme.titleSmall),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _optionInputController,
+                      decoration: InputDecoration(
+                        hintText: 'Add option...',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 12,
+                        ),
+                      ),
+                      onChanged: (_) => setState(() {}),
+                      onSubmitted: (_) {
+                        if (_optionInputController.text.trim().isNotEmpty) {
+                          _addOption();
+                        }
+                      },
                     ),
                   ),
-                );
-              }).toList(),
-            ),
+                  const SizedBox(width: 8),
+                  ElevatedButton(
+                    onPressed: _optionInputController.text.trim().isEmpty
+                        ? null
+                        : _addOption,
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 16,
+                      ),
+                    ),
+                    child: const Text('Add'),
+                  ),
+                ],
+              ),
+              if (_options.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: _options.map((option) {
+                    return Chip(
+                      label: Text(option),
+                      deleteIcon: const Icon(Icons.close, size: 18),
+                      onDeleted: () => _removeOption(option),
+                    );
+                  }).toList(),
+                ),
+              ],
+            ],
           ],
         ),
       ),
@@ -156,25 +176,19 @@ class _CreateFieldDialogState extends State<CreateFieldDialog> {
               return;
             }
 
-            final options = _optionsController.text
-                .split(',')
-                .map((s) => s.trim())
-                .where((s) => s.isNotEmpty)
-                .toList();
-
             if (widget.initialField == null) {
               context.read<TasksListCubit>().createField(
-                    name: name,
-                    type: _selectedType,
-                    options: options,
-                    color: _colorToHex(_selectedColor),
-                  );
+                name: name,
+                type: _selectedType,
+                options: _options,
+                color: _colorToHex(_selectedColor),
+              );
             } else {
               context.read<TasksListCubit>().updateField(
-                    fieldId: widget.initialField!.id,
-                    name: name,
-                    color: _colorToHex(_selectedColor),
-                  );
+                fieldId: widget.initialField!.id,
+                name: name,
+                color: _colorToHex(_selectedColor),
+              );
             }
 
             Navigator.pop(context);
@@ -224,10 +238,7 @@ class FieldSelector extends StatelessWidget {
                 avatar: CircleAvatar(backgroundColor: field.color),
                 label: Text(field.name),
                 backgroundColor: Colors.transparent,
-                side: BorderSide(
-                  color: field.color.withOpacity(0.3),
-                  width: 1,
-                ),
+                side: BorderSide(color: field.color.withOpacity(0.3), width: 1),
                 selectedColor: field.color.withOpacity(0.2),
               ),
             );
