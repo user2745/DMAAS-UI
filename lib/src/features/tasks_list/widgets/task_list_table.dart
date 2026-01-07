@@ -366,11 +366,41 @@ class _TaskListTableState extends State<TaskListTable> {
                   DataCell(
                     SizedBox(
                       width: 140,
-                      child: Text(
-                        _formatDate(task.dueDate),
-                        style: const TextStyle(
-                          fontSize: 13,
-                          color: Color(0xFF6B7280),
+                      child: InkWell(
+                        onTap: () async {
+                          final picked = await showDatePicker(
+                            context: context,
+                            initialDate: task.dueDate ?? DateTime.now(),
+                            firstDate: DateTime(2000),
+                            lastDate: DateTime(2100),
+                          );
+                          if (picked != null) {
+                            widget.onTaskUpdate(task.copyWith(dueDate: picked));
+                          }
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 6,
+                          ),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  _formatDate(task.dueDate),
+                                  style: const TextStyle(
+                                    fontSize: 13,
+                                    color: Color(0xFF6B7280),
+                                  ),
+                                ),
+                              ),
+                              const Icon(
+                                Icons.calendar_today,
+                                size: 14,
+                                color: Color(0xFF6B7280),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ),
