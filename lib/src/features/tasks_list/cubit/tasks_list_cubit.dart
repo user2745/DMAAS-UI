@@ -14,7 +14,7 @@ class TasksListState extends Equatable {
     required this.taskFieldById,
     required this.taskAssigneesById,
     required this.taskFieldValuesByTaskId,
-    this.sortKey = TaskSortKey.createdAt,
+    this.sortKey = TaskSortKey.manual,
     this.sortAscending = false,
     this.query = '',
     this.isLoading = false,
@@ -41,10 +41,14 @@ class TasksListState extends Equatable {
   /// Get filtered + sorted tasks
   List<Task> get sortedTasks {
     final filtered = filteredTasks;
+    if (sortKey == TaskSortKey.manual) return filtered;
     final sorted = List<Task>.from(filtered);
     sorted.sort((a, b) {
       int cmp;
       switch (sortKey) {
+        case TaskSortKey.manual:
+          cmp = a.order.compareTo(b.order);
+          break;
         case TaskSortKey.title:
           cmp = a.title.toLowerCase().compareTo(b.title.toLowerCase());
           break;
@@ -134,7 +138,7 @@ class TasksListState extends Equatable {
   ];
 }
 
-enum TaskSortKey { title, status, dueDate, createdAt }
+enum TaskSortKey { manual, title, status, dueDate, createdAt }
 
 class TasksListCubit extends Cubit<TasksListState> {
   TasksListCubit({TaskApiService? taskApiService})
@@ -155,16 +159,18 @@ class TasksListCubit extends Cubit<TasksListState> {
     emit(state.copyWith(isLoading: true, error: null));
     try {
       final tasksResult = await _taskApiService.fetchAllTasks();
+      final orderedTasks = List<Task>.from(tasksResult)
+        ..sort((a, b) => a.order.compareTo(b.order));
       // Build field values map from fetched tasks, if present
       final values = <String, Map<String, Object?>>{};
-      for (final t in tasksResult) {
+      for (final t in orderedTasks) {
         if (t.fieldValues != null) {
           values[t.id] = Map<String, Object?>.from(t.fieldValues!);
         }
       }
       emit(
         state.copyWith(
-          tasks: tasksResult,
+          tasks: orderedTasks,
           taskFieldValuesByTaskId: values.isNotEmpty
               ? values
               : state.taskFieldValuesByTaskId,
@@ -180,7 +186,9 @@ class TasksListCubit extends Cubit<TasksListState> {
     emit(state.copyWith(isLoading: true, error: null));
     try {
       final tasks = await _taskApiService.fetchAllTasks();
-      emit(state.copyWith(tasks: tasks, isLoading: false));
+      final orderedTasks = List<Task>.from(tasks)
+        ..sort((a, b) => a.order.compareTo(b.order));
+      emit(state.copyWith(tasks: orderedTasks, isLoading: false));
     } catch (e) {
       emit(state.copyWith(isLoading: false, error: e.toString()));
     }
@@ -283,7 +291,8 @@ class TasksListCubit extends Cubit<TasksListState> {
         description: description,
         dueDate: dueDate,
       );
-      final updatedTasks = [task, ...state.tasks];
+      final updatedTasks = [...state.tasks, task]
+        ..sort((a, b) => a.order.compareTo(b.order));
       final updatedTaskFieldById = Map<String, String?>.from(
         state.taskFieldById,
       );
@@ -373,6 +382,44 @@ class TasksListCubit extends Cubit<TasksListState> {
       );
     } catch (e) {
       // Keep optimistic UI; optionally roll back on failure
+      emit(state.copyWith(error: e.toString()));
+    }
+  }
+
+  Future<void> reorderTasks(int oldIndex, int newIndex) async {
+    var targetIndex = newIndex;
+    if (newIndex > oldIndex) targetIndex -= 1;
+
+    final orderedIds = List<String>.from(
+      state.sortedTasks.map((task) => task.id),
+    );
+    final movedId = orderedIds.removeAt(oldIndex);
+    orderedIds.insert(targetIndex, movedId);
+
+    final visibleTasks = orderedIds
+        .map((id) => state.tasks.firstWhere((task) => task.id == id))
+        .toList();
+    final remainingTasks = state.tasks
+        .where((task) => !orderedIds.contains(task.id))
+        .toList();
+
+    final combined = [...visibleTasks, ...remainingTasks];
+    final reindexed = List<Task>.generate(
+      combined.length,
+      (i) => combined[i].copyWith(order: i),
+    );
+
+    emit(
+      state.copyWith(
+        tasks: reindexed,
+        sortKey: TaskSortKey.manual,
+        sortAscending: true,
+      ),
+    );
+
+    try {
+      await _taskApiService.reorderTasks(reindexed.map((t) => t.id).toList());
+    } catch (e) {
       emit(state.copyWith(error: e.toString()));
     }
   }

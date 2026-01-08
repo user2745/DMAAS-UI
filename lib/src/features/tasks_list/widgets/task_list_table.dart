@@ -19,6 +19,7 @@ class TaskListTable extends StatefulWidget {
     required this.onAddField,
     required this.onSortChanged,
     required this.onAddTask,
+    required this.onReorder,
     this.onFieldValueChange,
   });
 
@@ -33,6 +34,7 @@ class TaskListTable extends StatefulWidget {
   final VoidCallback onAddField;
   final void Function(TaskSortKey) onSortChanged;
   final Function(String title) onAddTask;
+  final void Function(int oldIndex, int newIndex) onReorder;
   final void Function(String taskId, String fieldId, Object? value)?
   onFieldValueChange;
 
@@ -59,19 +61,6 @@ class _TaskListTableState extends State<TaskListTable> {
     super.dispose();
   }
 
-  int? _sortColumnIndex() {
-    switch (widget.sortKey) {
-      case TaskSortKey.title:
-        return 1;
-      case TaskSortKey.status:
-        return 3;
-      case TaskSortKey.dueDate:
-        return 4;
-      case TaskSortKey.createdAt:
-        return null; // No dedicated column for created date
-    }
-  }
-
   String _formatDate(DateTime? date) {
     if (date == null) return '-';
     return DateFormat('MMM d, yyyy').format(date);
@@ -92,6 +81,62 @@ class _TaskListTableState extends State<TaskListTable> {
       return (label: 'In Progress', color: const Color(0xFF58A6FF));
     }
     return (label: 'To Do', color: const Color(0xFF58A6FF));
+  }
+
+  double get _tableWidth {
+    // Drag handle/index + title + assignees + status + due date + actions + add-field + padding
+    const baseWidth = 48 + 280 + 150 + 140 + 140 + 100 + 40 + 24;
+    return baseWidth + (widget.fields.length * 140);
+  }
+
+  Widget _headerCell({
+    required String label,
+    required double width,
+    TaskSortKey? sortKey,
+    VoidCallback? onTap,
+  }) {
+    final isActive = sortKey != null && widget.sortKey == sortKey;
+    final icon = isActive
+        ? Icon(
+            widget.sortAscending
+                ? Icons.arrow_drop_up
+                : Icons.arrow_drop_down,
+            size: 18,
+            color: Colors.grey[700],
+          )
+        : null;
+
+    final content = Row(
+      children: [
+        Expanded(
+          child: Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                  color: Colors.grey[600],
+                  fontWeight: FontWeight.w600,
+                ),
+          ),
+        ),
+        if (icon != null) icon,
+      ],
+    );
+
+    if (onTap == null) {
+      return SizedBox(width: width, child: content);
+    }
+
+    return SizedBox(
+      width: width,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          child: content,
+        ),
+      ),
+    );
   }
 
   @override
@@ -123,462 +168,418 @@ class _TaskListTableState extends State<TaskListTable> {
       ),
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
-        child: DataTable(
-          headingRowColor: MaterialStateProperty.all(Colors.white),
-          dividerThickness: 1,
-          columnSpacing: 24,
-          headingRowHeight: 52,
-          dataRowHeight: 56,
-          sortColumnIndex: _sortColumnIndex(),
-          sortAscending: widget.sortAscending,
-          columns: [
-            DataColumn(
-              label: SizedBox(
-                width: 40,
-                child: Text(
-                  '#',
-                  style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                    color: Colors.grey[600],
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ),
-            DataColumn(
-              label: SizedBox(
-                width: 280,
-                child: Text(
-                  'Title',
-                  style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                    color: Colors.grey[600],
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-              onSort: (_, __) => widget.onSortChanged(TaskSortKey.title),
-            ),
-            DataColumn(
-              label: SizedBox(
-                width: 150,
-                child: Text(
-                  'Assignees',
-                  style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                    color: Colors.grey[600],
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ),
-            DataColumn(
-              label: SizedBox(
-                width: 140,
-                child: Text(
-                  'Status',
-                  style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                    color: Colors.grey[600],
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-              onSort: (_, __) => widget.onSortChanged(TaskSortKey.status),
-            ),
-            DataColumn(
-              label: SizedBox(
-                width: 140,
-                child: Text(
-                  'Due Date',
-                  style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                    color: Colors.grey[600],
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-              onSort: (_, __) => widget.onSortChanged(TaskSortKey.dueDate),
-            ),
-            DataColumn(
-              label: SizedBox(
-                width: 100,
-                child: Text(
-                  'Actions',
-                  style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                    color: Colors.grey[600],
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ),
-            // Custom field columns
-            ...widget.fields.map((field) {
-              return DataColumn(
-                label: SizedBox(
-                  width: 140,
-                  child: Text(
-                    field.name,
-                    style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                      color: field.color,
-                      fontWeight: FontWeight.w600,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              );
-            }).toList(),
-            // Add field button
-            DataColumn(
-              label: SizedBox(
-                width: 40,
-                child: Tooltip(
-                  message: 'Add field',
-                  child: IconButton(
-                    icon: Icon(Icons.add, size: 18, color: Colors.grey[400]),
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(
-                      minWidth: 40,
-                      minHeight: 40,
-                    ),
-                    onPressed: widget.onAddField,
-                  ),
-                ),
-              ),
-            ),
-          ],
-          rows: [
-            ...widget.tasks.asMap().entries.map((entry) {
-              final index = entry.key;
-              final task = entry.value;
-              final fieldId = widget.taskFieldById[task.id];
-              final isHovered = _hoveredRowIndex == index;
-              return DataRow(
-                color: MaterialStateProperty.resolveWith((states) {
-                  if (isHovered) {
-                    return const Color(0xFFFAFAFA);
-                  }
-                  return Colors.white;
-                }),
-                cells: [
-                  DataCell(
+        child: SizedBox(
+          width: _tableWidth,
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                child: Row(
+                  children: [
                     SizedBox(
-                      width: 40,
+                      width: 48,
                       child: Text(
-                        '${index + 1}',
-                        style: TextStyle(color: Colors.grey[500], fontSize: 13),
+                        '#',
+                        style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                              color: Colors.grey[600],
+                              fontWeight: FontWeight.w600,
+                            ),
                       ),
                     ),
-                  ),
-                  DataCell(
-                    SizedBox(
+                    _headerCell(
+                      label: 'Title',
                       width: 280,
-                      child: Text(
-                        task.title,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                          color: Color(0xFF1F2937),
+                      sortKey: TaskSortKey.title,
+                      onTap: () => widget.onSortChanged(TaskSortKey.title),
+                    ),
+                    _headerCell(label: 'Assignees', width: 150),
+                    _headerCell(
+                      label: 'Status',
+                      width: 140,
+                      sortKey: TaskSortKey.status,
+                      onTap: () => widget.onSortChanged(TaskSortKey.status),
+                    ),
+                    _headerCell(
+                      label: 'Due Date',
+                      width: 140,
+                      sortKey: TaskSortKey.dueDate,
+                      onTap: () => widget.onSortChanged(TaskSortKey.dueDate),
+                    ),
+                    _headerCell(label: 'Actions', width: 100),
+                    ...widget.fields.map((field) {
+                      return SizedBox(
+                        width: 140,
+                        child: Text(
+                          field.name,
+                          style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                                color: field.color,
+                                fontWeight: FontWeight.w600,
+                              ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      );
+                    }).toList(),
+                    SizedBox(
+                      width: 40,
+                      child: Tooltip(
+                        message: 'Add field',
+                        child: IconButton(
+                          icon: Icon(Icons.add, size: 18, color: Colors.grey[400]),
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(
+                            minWidth: 40,
+                            minHeight: 40,
+                          ),
+                          onPressed: widget.onAddField,
                         ),
                       ),
                     ),
-                  ),
-                  DataCell(
-                    SizedBox(
-                      width: 150,
-                      child: _AssigneesCell(
-                        taskId: task.id,
-                        onAdd: () async {
-                          final assignee = await _promptAssignee(context);
-                          if (assignee != null) {
-                            // Assignee assignment will be handled separately
-                          }
-                        },
+                  ],
+                ),
+              ),
+              const Divider(height: 1, color: Color(0xFFE5E7EB)),
+              ReorderableListView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                buildDefaultDragHandles: false,
+                onReorder: widget.onReorder,
+                itemCount: widget.tasks.length,
+                itemBuilder: (context, index) {
+                  final task = widget.tasks[index];
+                  final fieldId = widget.taskFieldById[task.id];
+                  final isHovered = _hoveredRowIndex == index;
+                  final ds = _derivedStatus(task);
+
+                  return MouseRegion(
+                    key: ValueKey(task.id),
+                    onEnter: (_) => setState(() => _hoveredRowIndex = index),
+                    onExit: (_) => setState(() => _hoveredRowIndex = null),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: isHovered ? const Color(0xFFFAFAFA) : Colors.white,
+                        border: const Border(
+                          bottom: BorderSide(color: Color(0xFFE5E7EB), width: 1),
+                        ),
                       ),
-                    ),
-                  ),
-                  DataCell(
-                    SizedBox(
-                      width: 140,
-                      child: Builder(
-                        builder: (context) {
-                          final ds = _derivedStatus(task);
-                          return PopupMenuButton<TaskStatus>(
-                            tooltip: 'Change status',
-                            offset: const Offset(0, 40),
-                            itemBuilder: (context) => [
-                              PopupMenuItem(
-                                value: TaskStatus.todo,
-                                child: Text('To Do'),
-                              ),
-                              PopupMenuItem(
-                                value: TaskStatus.inProgress,
-                                child: Text('In Progress'),
-                              ),
-                              PopupMenuItem(
-                                value: TaskStatus.done,
-                                child: Text('Done'),
-                              ),
-                            ],
-                            onSelected: (newStatus) {
-                              final updatedTask = task.copyWith(
-                                status: newStatus,
-                              );
-                              widget.onTaskUpdate(updatedTask);
-                            },
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 10,
-                                vertical: 6,
-                              ),
-                              decoration: BoxDecoration(
-                                color: ds.color.withOpacity(0.08),
-                                border: Border.all(
-                                  color: ds.color.withOpacity(0.2),
-                                  width: 1,
+                      padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 12),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          SizedBox(
+                            width: 48,
+                            child: Row(
+                              children: [
+                                ReorderableDragStartListener(
+                                  index: index,
+                                  child: Icon(
+                                    Icons.drag_indicator,
+                                    size: 18,
+                                    color: Colors.grey[500],
+                                  ),
                                 ),
-                                borderRadius: BorderRadius.circular(5),
+                                const SizedBox(width: 4),
+                                Text(
+                                  '${index + 1}',
+                                  style: TextStyle(color: Colors.grey[500], fontSize: 13),
+                                ),
+                              ],
+                            ),
+                          ),
+                          SizedBox(
+                            width: 280,
+                            child: Text(
+                              task.title,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                                color: Color(0xFF1F2937),
                               ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Expanded(
-                                    child: Text(
-                                      ds.label,
-                                      style: TextStyle(
-                                        color: ds.color,
-                                        fontWeight: FontWeight.w500,
-                                        fontSize: 12,
+                            ),
+                          ),
+                          SizedBox(
+                            width: 150,
+                            child: _AssigneesCell(
+                              taskId: task.id,
+                              onAdd: () async {
+                                final assignee = await _promptAssignee(context);
+                                if (assignee != null) {
+                                  // Assignee assignment will be handled separately
+                                }
+                              },
+                            ),
+                          ),
+                          SizedBox(
+                            width: 140,
+                            child: PopupMenuButton<TaskStatus>(
+                              tooltip: 'Change status',
+                              offset: const Offset(0, 40),
+                              itemBuilder: (context) => const [
+                                PopupMenuItem(
+                                  value: TaskStatus.todo,
+                                  child: Text('To Do'),
+                                ),
+                                PopupMenuItem(
+                                  value: TaskStatus.inProgress,
+                                  child: Text('In Progress'),
+                                ),
+                                PopupMenuItem(
+                                  value: TaskStatus.done,
+                                  child: Text('Done'),
+                                ),
+                              ],
+                              onSelected: (newStatus) {
+                                final updatedTask = task.copyWith(status: newStatus);
+                                widget.onTaskUpdate(updatedTask);
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 6,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: ds.color.withOpacity(0.08),
+                                  border: Border.all(
+                                    color: ds.color.withOpacity(0.2),
+                                    width: 1,
+                                  ),
+                                  borderRadius: BorderRadius.circular(5),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        ds.label,
+                                        style: TextStyle(
+                                          color: ds.color,
+                                          fontWeight: FontWeight.w500,
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                    ),
+                                    Icon(
+                                      Icons.arrow_drop_down,
+                                      size: 16,
+                                      color: ds.color,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                          SizedBox(
+                            width: 140,
+                            child: InkWell(
+                              onTap: () async {
+                                final picked = await showDatePicker(
+                                  context: context,
+                                  initialDate: task.dueDate ?? DateTime.now(),
+                                  firstDate: DateTime(2000),
+                                  lastDate: DateTime(2100),
+                                );
+                                if (picked != null) {
+                                  widget.onTaskUpdate(task.copyWith(dueDate: picked));
+                                }
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 6,
+                                ),
+                                child: Row(
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        _formatDate(task.dueDate),
+                                        style: const TextStyle(
+                                          fontSize: 13,
+                                          color: Color(0xFF6B7280),
+                                        ),
+                                      ),
+                                    ),
+                                    const Icon(
+                                      Icons.calendar_today,
+                                      size: 14,
+                                      color: Color(0xFF6B7280),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                          SizedBox(
+                            width: 100,
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                if (isHovered)
+                                  Tooltip(
+                                    message: 'Edit',
+                                    child: SizedBox(
+                                      width: 32,
+                                      height: 32,
+                                      child: IconButton(
+                                        icon: Icon(
+                                          Icons.edit,
+                                          size: 16,
+                                          color: Colors.grey[700],
+                                        ),
+                                        padding: EdgeInsets.zero,
+                                        onPressed: () {
+                                          _showEditTaskDialog(
+                                            context,
+                                            task,
+                                            fieldId,
+                                          );
+                                        },
                                       ),
                                     ),
                                   ),
-                                  Icon(
-                                    Icons.arrow_drop_down,
-                                    size: 16,
-                                    color: ds.color,
+                                if (isHovered)
+                                  Tooltip(
+                                    message: 'Delete',
+                                    child: SizedBox(
+                                      width: 32,
+                                      height: 32,
+                                      child: IconButton(
+                                        icon: Icon(
+                                          Icons.delete,
+                                          size: 16,
+                                          color: Colors.grey[700],
+                                        ),
+                                        padding: EdgeInsets.zero,
+                                        onPressed: () {
+                                          _showDeleteConfirmation(context, task.id);
+                                        },
+                                      ),
+                                    ),
                                   ),
-                                ],
-                              ),
+                              ],
                             ),
-                          );
-                        },
-                      ),
-                    ),
-                  ),
-                  DataCell(
-                    SizedBox(
-                      width: 140,
-                      child: InkWell(
-                        onTap: () async {
-                          final picked = await showDatePicker(
-                            context: context,
-                            initialDate: task.dueDate ?? DateTime.now(),
-                            firstDate: DateTime(2000),
-                            lastDate: DateTime(2100),
-                          );
-                          if (picked != null) {
-                            widget.onTaskUpdate(task.copyWith(dueDate: picked));
-                          }
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 6,
                           ),
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  _formatDate(task.dueDate),
-                                  style: const TextStyle(
-                                    fontSize: 13,
-                                    color: Color(0xFF6B7280),
-                                  ),
-                                ),
-                              ),
-                              const Icon(
-                                Icons.calendar_today,
-                                size: 14,
-                                color: Color(0xFF6B7280),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                  DataCell(
-                    SizedBox(
-                      width: 100,
-                      child: MouseRegion(
-                        onEnter: (_) =>
-                            setState(() => _hoveredRowIndex = index),
-                        onExit: (_) => setState(() => _hoveredRowIndex = null),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            if (isHovered)
-                              Tooltip(
-                                message: 'Edit',
-                                child: SizedBox(
-                                  width: 32,
-                                  height: 32,
-                                  child: IconButton(
-                                    icon: Icon(
-                                      Icons.edit,
-                                      size: 16,
-                                      color: Colors.grey[700],
-                                    ),
-                                    padding: EdgeInsets.zero,
-                                    onPressed: () {
-                                      _showEditTaskDialog(
-                                        context,
-                                        task,
-                                        fieldId,
-                                      );
-                                    },
-                                  ),
-                                ),
-                              ),
-                            if (isHovered)
-                              Tooltip(
-                                message: 'Delete',
-                                child: SizedBox(
-                                  width: 32,
-                                  height: 32,
-                                  child: IconButton(
-                                    icon: Icon(
-                                      Icons.delete,
-                                      size: 16,
-                                      color: Colors.grey[700],
-                                    ),
-                                    padding: EdgeInsets.zero,
-                                    onPressed: () {
-                                      _showDeleteConfirmation(context, task.id);
-                                    },
-                                  ),
-                                ),
-                              ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                  // Custom field values
-                  ...widget.fields.map((field) {
-                    final value =
-                        widget.taskFieldValuesByTaskId[task.id]?[field.id];
+                          ...widget.fields.map((field) {
+                            final value =
+                                widget.taskFieldValuesByTaskId[task.id]?[field.id];
 
-                    return DataCell(
-                      SizedBox(
-                        width: 140,
-                        child: _buildFieldCell(
-                          task: task,
-                          field: field,
-                          value: value,
-                        ),
+                            return SizedBox(
+                              width: 140,
+                              child: _buildFieldCell(
+                                task: task,
+                                field: field,
+                                value: value,
+                              ),
+                            );
+                          }).toList(),
+                          const SizedBox(width: 40),
+                        ],
                       ),
-                    );
-                  }).toList(),
-                  // Add field button column
-                  DataCell(SizedBox(width: 40, child: const SizedBox())),
-                ],
-              );
-            }).toList(),
-            // Quick-add row
-            DataRow(
-              color: MaterialStateProperty.all(Colors.white),
-              cells: [
-                DataCell(
-                  SizedBox(
-                    width: 40,
-                    child: Text(
-                      '${widget.tasks.length + 1}',
-                      style: TextStyle(color: Colors.grey[400], fontSize: 13),
                     ),
-                  ),
-                ),
-                DataCell(
-                  SizedBox(
-                    width: 280,
-                    child: _isAddingTask
-                        ? _InlineTaskEditor(
-                            controller: _newTaskController,
-                            focusNode: _newTaskFocusNode,
-                            onChanged: (_) => setState(() {}),
-                            onSubmit: (title) {
-                              if (title.isNotEmpty) {
-                                widget.onAddTask(title);
-                                setState(() {
-                                  _isAddingTask = false;
-                                  _newTaskController.clear();
-                                });
-                              }
-                            },
-                            onCancel: () {
-                              setState(() {
-                                _isAddingTask = false;
-                                _newTaskController.clear();
-                              });
-                            },
-                            title: _newTaskController.text,
-                          )
-                        : InkWell(
-                            onTap: () {
-                              setState(() {
-                                _isAddingTask = true;
-                              });
-                              Future.delayed(
-                                const Duration(milliseconds: 100),
-                                () => _newTaskFocusNode.requestFocus(),
-                              );
-                            },
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 8,
-                              ),
-                              decoration: BoxDecoration(
-                                border: Border.all(
-                                  color: Colors.grey[300]!,
-                                  width: 1,
-                                ),
-                                borderRadius: BorderRadius.circular(5),
-                                color: Colors.grey[50],
-                              ),
-                              child: Row(
-                                children: [
-                                  Icon(
-                                    Icons.add,
-                                    size: 16,
-                                    color: Colors.grey[500],
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    'Add new task...',
-                                    style: TextStyle(
-                                      color: Colors.grey[500],
-                                      fontSize: 13,
-                                    ),
-                                  ),
-                                ],
-                              ),
+                  );
+                },
+              ),
+              _buildQuickAddRow(),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildQuickAddRow() {
+    return Container(
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        border: Border(
+          top: BorderSide(color: Color(0xFFE5E7EB), width: 1),
+        ),
+      ),
+      padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 12),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 48,
+            child: Text(
+              '${widget.tasks.length + 1}',
+              style: TextStyle(color: Colors.grey[400], fontSize: 13),
+            ),
+          ),
+          SizedBox(
+            width: 280,
+            child: _isAddingTask
+                ? _InlineTaskEditor(
+                    controller: _newTaskController,
+                    focusNode: _newTaskFocusNode,
+                    onChanged: (_) => setState(() {}),
+                    onSubmit: (title) {
+                      if (title.isNotEmpty) {
+                        widget.onAddTask(title);
+                        setState(() {
+                          _isAddingTask = false;
+                          _newTaskController.clear();
+                        });
+                      }
+                    },
+                    onCancel: () {
+                      setState(() {
+                        _isAddingTask = false;
+                        _newTaskController.clear();
+                      });
+                    },
+                    title: _newTaskController.text,
+                  )
+                : InkWell(
+                    onTap: () {
+                      setState(() {
+                        _isAddingTask = true;
+                      });
+                      Future.delayed(
+                        const Duration(milliseconds: 100),
+                        () => _newTaskFocusNode.requestFocus(),
+                      );
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
+                      decoration: BoxDecoration(
+                        border: Border.all(
+                          color: Colors.grey[300]!,
+                          width: 1,
+                        ),
+                        borderRadius: BorderRadius.circular(5),
+                        color: Colors.grey[50],
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.add,
+                            size: 16,
+                            color: Colors.grey[500],
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Add new task...',
+                            style: TextStyle(
+                              color: Colors.grey[500],
+                              fontSize: 13,
                             ),
                           ),
+                        ],
+                      ),
+                    ),
                   ),
-                ),
-                const DataCell(SizedBox(width: 150)),
-                const DataCell(SizedBox(width: 140)),
-                const DataCell(SizedBox(width: 140)),
-                const DataCell(SizedBox(width: 100)),
-                // Field cells for quick-add row
-                ...widget.fields.map((field) {
-                  return const DataCell(SizedBox(width: 140));
-                }).toList(),
-                // Add field button cell
-                DataCell(SizedBox(width: 40, child: const SizedBox())),
-              ],
-            ),
-          ],
-        ),
+          ),
+          const SizedBox(width: 150),
+          const SizedBox(width: 140),
+          const SizedBox(width: 140),
+          const SizedBox(width: 100),
+          ...widget.fields.map((_) => const SizedBox(width: 140)).toList(),
+          const SizedBox(width: 40),
+        ],
       ),
     );
   }

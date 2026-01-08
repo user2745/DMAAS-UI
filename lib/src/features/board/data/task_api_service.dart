@@ -64,6 +64,7 @@ class TaskApiService {
     String? status,
     DateTime? dueDate,
     Map<String, Object?>? fieldValues,
+    int? order,
   }) async {
     try {
       final payload = {
@@ -78,6 +79,7 @@ class TaskApiService {
             }
             return MapEntry(key, value);
           }),
+        if (order != null) 'order': order,
       };
 
       final response = await httpClient.patch(
@@ -93,6 +95,25 @@ class TaskApiService {
       }
     } catch (e) {
       throw Exception('Error updating task: $e');
+    }
+  }
+
+  Future<List<Task>> reorderTasks(List<String> taskIds) async {
+    try {
+      final response = await httpClient.patch(
+        Uri.parse('$baseUrl/tasks/reorder'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'taskIds': taskIds}),
+      );
+
+      if (response.statusCode == 200) {
+        final List<dynamic> data = jsonDecode(response.body);
+        return data.map((json) => Task.fromJson(json)).toList();
+      }
+
+      throw Exception('Failed to reorder tasks: ${response.statusCode}');
+    } catch (e) {
+      throw Exception('Error reordering tasks: $e');
     }
   }
 

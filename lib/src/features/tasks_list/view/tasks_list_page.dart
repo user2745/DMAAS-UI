@@ -140,6 +140,11 @@ class _TasksListPageState extends State<TasksListPage> {
                           value: value,
                         );
                       },
+                      onReorder: (oldIndex, newIndex) {
+                        context
+                            .read<TasksListCubit>()
+                            .reorderTasks(oldIndex, newIndex);
+                      },
                     ),
                   ],
                 ),

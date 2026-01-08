@@ -77,6 +77,7 @@ class Task extends Equatable {
     required this.title,
     required this.status,
     required this.createdAt,
+    this.order = 0,
     this.description,
     this.dueDate,
     this.fieldValues,
@@ -87,6 +88,7 @@ class Task extends Equatable {
   final String? description;
   final TaskStatus status;
   final DateTime createdAt;
+  final int order;
   final DateTime? dueDate;
   final Map<String, dynamic>? fieldValues;
 
@@ -99,6 +101,7 @@ class Task extends Equatable {
       createdAt: json['createdAt'] != null
           ? DateTime.parse(json['createdAt'])
           : DateTime.now(),
+      order: (json['order'] as num?)?.toInt() ?? 0,
       dueDate: json['dueDate'] != null ? DateTime.parse(json['dueDate']) : null,
       fieldValues: json['fieldValues'] is Map<String, dynamic>
           ? json['fieldValues'] as Map<String, dynamic>
@@ -123,6 +126,7 @@ class Task extends Equatable {
     String? description,
     TaskStatus? status,
     DateTime? createdAt,
+    int? order,
     DateTime? dueDate,
     Map<String, dynamic>? fieldValues,
   }) {
@@ -132,6 +136,7 @@ class Task extends Equatable {
       description: description ?? this.description,
       status: status ?? this.status,
       createdAt: createdAt ?? this.createdAt,
+      order: order ?? this.order,
       dueDate: dueDate ?? this.dueDate,
       fieldValues: fieldValues ?? this.fieldValues,
     );
@@ -144,6 +149,7 @@ class Task extends Equatable {
     description,
     status,
     createdAt,
+    order,
     dueDate,
     fieldValues,
   ];
