@@ -6,6 +6,8 @@ import '../models/task.dart';
 class TaskListApiService {
   final String baseUrl;
   final http.Client httpClient;
+  final String? Function()? authTokenProvider;
+  final String? Function()? anonymousIdProvider;
 
   TaskListApiService({
     this.baseUrl = const String.fromEnvironment(
@@ -13,12 +15,28 @@ class TaskListApiService {
       defaultValue: 'http://dmaas.athletex.io:3302',
     ),
     http.Client? httpClient,
+    this.authTokenProvider,
+    this.anonymousIdProvider,
   }) : httpClient = httpClient ?? http.Client();
+
+  Map<String, String> _headers([Map<String, String>? extras]) {
+    final headers = {'Content-Type': 'application/json', ...?extras};
+    final token = authTokenProvider?.call();
+    if (token != null && token.isNotEmpty) {
+      headers['Authorization'] = 'Bearer $token';
+    }
+    final anonId = anonymousIdProvider?.call();
+    if (anonId != null && anonId.isNotEmpty) {
+      headers['X-Anonymous-Id'] = anonId;
+    }
+    return headers;
+  }
 
   Future<List<TaskListItem>> fetchAllTasks() async {
     try {
       final response = await httpClient.get(
         Uri.parse('$baseUrl/tasks'),
+        headers: _headers(),
       );
 
       if (response.statusCode == 200) {
@@ -36,6 +54,7 @@ class TaskListApiService {
     try {
       final response = await httpClient.get(
         Uri.parse('$baseUrl/tasks?categoryId=$categoryId'),
+        headers: _headers(),
       );
 
       if (response.statusCode == 200) {
@@ -67,7 +86,7 @@ class TaskListApiService {
 
       final response = await httpClient.post(
         Uri.parse('$baseUrl/tasks'),
-        headers: {'Content-Type': 'application/json'},
+        headers: _headers(),
         body: jsonEncode(payload),
       );
 
@@ -101,7 +120,7 @@ class TaskListApiService {
 
       final response = await httpClient.put(
         Uri.parse('$baseUrl/tasks/$taskId'),
-        headers: {'Content-Type': 'application/json'},
+        headers: _headers(),
         body: jsonEncode(payload),
       );
 
@@ -120,6 +139,7 @@ class TaskListApiService {
     try {
       final response = await httpClient.delete(
         Uri.parse('$baseUrl/tasks/$taskId'),
+        headers: _headers(),
       );
 
       if (response.statusCode != 200 && response.statusCode != 204) {

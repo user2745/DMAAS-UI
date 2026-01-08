@@ -10,7 +10,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   testWidgets('Renders board columns', (WidgetTester tester) async {
-    await tester.pumpWidget(const TaskBoardApp());
+    await tester.pumpWidget(const TaskBoardApp(anonymousId: 'test-anon')); 
 
     expect(find.text('DMAAS'), findsOneWidget);
 

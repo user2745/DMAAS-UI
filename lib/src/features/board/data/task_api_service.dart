@@ -6,15 +6,35 @@ import '../models/task.dart';
 class TaskApiService {
   final String baseUrl;
   final http.Client httpClient;
+  final String? Function()? authTokenProvider;
+  final String? Function()? anonymousIdProvider;
 
   TaskApiService({
     this.baseUrl = const String.fromEnvironment('API_BASE_URL', defaultValue: 'https://dmaas.athletex.io'),
     http.Client? httpClient,
+    this.authTokenProvider,
+    this.anonymousIdProvider,
   }) : httpClient = httpClient ?? http.Client();
+
+  Map<String, String> _headers([Map<String, String>? extras]) {
+    final headers = {'Content-Type': 'application/json', ...?extras};
+    final token = authTokenProvider?.call();
+    if (token != null && token.isNotEmpty) {
+      headers['Authorization'] = 'Bearer $token';
+    }
+    final anonId = anonymousIdProvider?.call();
+    if (anonId != null && anonId.isNotEmpty) {
+      headers['X-Anonymous-Id'] = anonId;
+    }
+    return headers;
+  }
 
   Future<List<Task>> fetchAllTasks() async {
     try {
-      final response = await httpClient.get(Uri.parse('$baseUrl/tasks'));
+      final response = await httpClient.get(
+        Uri.parse('$baseUrl/tasks'),
+        headers: _headers(),
+      );
 
       if (response.statusCode == 200) {
         final List<dynamic> data = jsonDecode(response.body);
@@ -43,7 +63,7 @@ class TaskApiService {
 
       final response = await httpClient.post(
         Uri.parse('$baseUrl/tasks'),
-        headers: {'Content-Type': 'application/json'},
+        headers: _headers(),
         body: jsonEncode(payload),
       );
 
@@ -82,7 +102,7 @@ class TaskApiService {
 
       final response = await httpClient.patch(
         Uri.parse('$baseUrl/tasks/$taskId'),
-        headers: {'Content-Type': 'application/json'},
+        headers: _headers(),
         body: jsonEncode(payload),
       );
 
@@ -100,6 +120,7 @@ class TaskApiService {
     try {
       final response = await httpClient.delete(
         Uri.parse('$baseUrl/tasks/$taskId'),
+        headers: _headers(),
       );
 
       if (response.statusCode != 200 && response.statusCode != 204) {

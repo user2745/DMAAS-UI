@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 
 import 'src/app.dart';
+import 'src/core/anonymous_id.dart';
 
-void main() {
-  runApp(const TaskBoardApp());
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  final anonymousId = await AnonymousId.getOrCreate();
+  runApp(TaskBoardApp(anonymousId: anonymousId));
 }
