@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../models/task.dart';
+import 'drag_gate_widget.dart';
 import 'task_card_new.dart';
 
 class TaskColumn extends StatefulWidget {
@@ -82,29 +83,38 @@ class _TaskColumnState extends State<TaskColumn> {
               Flexible(
                 child: widget.tasks.isEmpty
                     ? _EmptyColumn(status: widget.status)
-                    : SingleChildScrollView(
-                        child: Column(
-                          children: widget.tasks
-                              .map(
-                                (task) => TaskCard(
-                                  task: task,
-                                  onMoveLeft: task.status.previous == null
-                                      ? null
-                                      : () => widget.onMove(
-                                          task.id,
-                                          task.status.previous!,
-                                        ),
-                                  onMoveRight: task.status.next == null
-                                      ? null
-                                      : () => widget.onMove(
-                                          task.id,
-                                          task.status.next!,
-                                        ),
-                                  onDelete: () => widget.onRemove(task.id),
-                                  onEdit: () => widget.onEdit(task),
-                                ),
-                              )
-                              .toList(),
+                    : RawScrollbar(
+                        thickness: 6,
+                        radius: const Radius.circular(3),
+                        thumbColor: Colors.grey.withOpacity(0.4),
+                        minThumbLength: 10,
+                        trackColor: Colors.grey.withOpacity(0.7),
+                        child: SingleChildScrollView(
+                          child: Column(
+                            children: widget.tasks
+                                .map(
+                                  (task) => DragGateWidget(
+                                    child: TaskCard(
+                                      task: task,
+                                      onMoveLeft: task.status.previous == null
+                                          ? null
+                                          : () => widget.onMove(
+                                              task.id,
+                                              task.status.previous!,
+                                            ),
+                                      onMoveRight: task.status.next == null
+                                          ? null
+                                          : () => widget.onMove(
+                                              task.id,
+                                              task.status.next!,
+                                            ),
+                                      onDelete: () => widget.onRemove(task.id),
+                                      onEdit: () => widget.onEdit(task),
+                                    ),
+                                  ),
+                                )
+                                .toList(),
+                          ),
                         ),
                       ),
               ),

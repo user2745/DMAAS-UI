@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../models/task.dart';
+import 'drag_gate_widget.dart';
 import 'task_detail_modal.dart';
 
 class TaskCard extends StatelessWidget {
@@ -21,6 +22,9 @@ class TaskCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final gateState = DragGateProvider.maybeOf(context);
+    final canDrag = gateState?.canDrag ?? true;
+
     return Draggable<Task>(
       data: task,
       feedback: Material(
@@ -39,6 +43,8 @@ class TaskCard extends StatelessWidget {
         onTap: () => TaskDetailModal.show(context, task: task),
         child: _buildCardContent(context),
       ),
+      onDragStarted: canDrag ? null : () {}, // Suppress drag if gated
+      maxSimultaneousDrags: canDrag ? 1 : 0,
     );
   }
 
