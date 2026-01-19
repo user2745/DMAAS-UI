@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -9,11 +10,13 @@ class TaskBoardState extends Equatable {
     required this.tasks,
     this.isLoading = false,
     this.error,
+    this.isReorderInFlight = false,
   });
 
   final List<Task> tasks;
   final bool isLoading;
   final String? error;
+  final bool isReorderInFlight;
 
   Map<TaskStatus, List<Task>> get groupedByStatus {
     final Map<TaskStatus, List<Task>> map = {
@@ -23,7 +26,12 @@ class TaskBoardState extends Equatable {
       map[task.status]!.add(task);
     }
     for (final entry in map.entries) {
-      entry.value.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      // Sort by order ascending, then by createdAt descending
+      entry.value.sort((a, b) {
+        final orderComparison = a.order.compareTo(b.order);
+        if (orderComparison != 0) return orderComparison;
+        return b.createdAt.compareTo(a.createdAt);
+      });
     }
     return map;
   }
@@ -32,15 +40,17 @@ class TaskBoardState extends Equatable {
     List<Task>? tasks,
     bool? isLoading,
     String? error,
+    bool? isReorderInFlight,
   }) =>
       TaskBoardState(
         tasks: tasks ?? this.tasks,
         isLoading: isLoading ?? this.isLoading,
         error: error,
+        isReorderInFlight: isReorderInFlight ?? this.isReorderInFlight,
       );
 
   @override
-  List<Object?> get props => [tasks, isLoading, error];
+  List<Object?> get props => [tasks, isLoading, error, isReorderInFlight];
 }
 
 class TaskBoardCubit extends Cubit<TaskBoardState> {
@@ -51,6 +61,14 @@ class TaskBoardCubit extends Cubit<TaskBoardState> {
         super(TaskBoardState(tasks: List<Task>.from(seedTasks)));
 
   final TaskApiService _apiService;
+  Timer? _reorderDebounceTimer;
+  final Set<TaskStatus> _affectedStatuses = {};
+
+  @override
+  Future<void> close() {
+    _reorderDebounceTimer?.cancel();
+    return super.close();
+  }
 
   Future<void> loadTasks() async {
     emit(state.copyWith(isLoading: true, error: null));
@@ -91,6 +109,7 @@ class TaskBoardCubit extends Cubit<TaskBoardState> {
         description: task.description,
         status: task.status.value,
         dueDate: task.dueDate,
+        order: task.order,
       );
       final updated = state.tasks
           .map((t) => t.id == task.id ? updatedTask : t)
@@ -108,6 +127,163 @@ class TaskBoardCubit extends Cubit<TaskBoardState> {
       await updateTask(updatedTask);
     } catch (e) {
       emit(state.copyWith(error: e.toString()));
+    }
+  }
+
+  Future<void> reorderTask({
+    required String taskId,
+    required TaskStatus toStatus,
+    required int toIndex,
+  }) async {
+    try {
+      // Store previous state for rollback (in case needed for error handling)
+      
+      // Get the task being moved
+      final task = state.tasks.firstWhere((t) => t.id == taskId);
+      final fromStatus = task.status;
+      
+      // Track affected statuses
+      _affectedStatuses.add(fromStatus);
+      _affectedStatuses.add(toStatus);
+      
+      // Optimistically update local state
+      List<Task> updatedTasks = List<Task>.from(state.tasks);
+      
+      // Remove task from old position
+      updatedTasks.removeWhere((t) => t.id == taskId);
+      
+      // Insert the task at the target index
+      final movedTask = task.copyWith(status: toStatus);
+      
+      // Reassign order values for affected tasks
+      final reorderedTasks = _reassignOrderValues(
+        allTasks: updatedTasks,
+        taskToInsert: movedTask,
+        targetStatus: toStatus,
+        insertIndex: toIndex,
+      );
+      
+      // Emit optimistic state
+      emit(state.copyWith(
+        tasks: reorderedTasks,
+        isReorderInFlight: true,
+        error: null,
+      ));
+      
+      // Debounce server sync
+      _debounceServerSync();
+    } catch (e) {
+      emit(state.copyWith(error: e.toString()));
+    }
+  }
+
+  /// Reassigns order values for all tasks, inserting taskToInsert at insertIndex in targetStatus
+  List<Task> _reassignOrderValues({
+    required List<Task> allTasks,
+    required Task taskToInsert,
+    required TaskStatus targetStatus,
+    required int insertIndex,
+  }) {
+    final result = List<Task>.from(allTasks);
+    
+    // Get all tasks in target status
+    final tasksInTarget = result
+        .where((t) => t.status == targetStatus)
+        .toList();
+    
+    // Remove them from result
+    result.removeWhere((t) => t.status == targetStatus);
+    
+    // Insert the moved task at the target index
+    tasksInTarget.insert(insertIndex.clamp(0, tasksInTarget.length), taskToInsert);
+    
+    // Reassign order values (0, 1, 2, ...)
+    for (int i = 0; i < tasksInTarget.length; i++) {
+      tasksInTarget[i] = tasksInTarget[i].copyWith(order: i);
+    }
+    
+    // For other affected status, also reassign order values
+    for (final status in _affectedStatuses) {
+      if (status != targetStatus) {
+        final tasksInStatus = result
+            .where((t) => t.status == status)
+            .toList();
+        
+        result.removeWhere((t) => t.status == status);
+        
+        for (int i = 0; i < tasksInStatus.length; i++) {
+          tasksInStatus[i] = tasksInStatus[i].copyWith(order: i);
+        }
+        
+        result.addAll(tasksInStatus);
+      }
+    }
+    
+    // Add back the reordered tasks in target status
+    result.addAll(tasksInTarget);
+    
+    return result;
+  }
+
+  void _debounceServerSync() {
+    // Cancel existing timer
+    _reorderDebounceTimer?.cancel();
+    
+    // Set new 5-second timer
+    _reorderDebounceTimer = Timer(const Duration(seconds: 5), () {
+      _syncReorderedTasks();
+    });
+  }
+
+  Future<void> _syncReorderedTasks() async {
+    try {
+      // Collect all tasks from affected statuses
+      final tasksToSync = state.tasks
+          .where((t) => _affectedStatuses.contains(t.status))
+          .toList();
+      
+      // Call reorder endpoint
+      if (tasksToSync.isNotEmpty) {
+        final taskIds = tasksToSync.map((t) => t.id).toList();
+        await _apiService.reorderTasks(taskIds);
+      }
+      
+      // Clear affected statuses and set in-flight to false
+      _affectedStatuses.clear();
+      emit(state.copyWith(isReorderInFlight: false));
+    } catch (e) {
+      // On error, resync affected columns from server
+      await _resyncAffectedColumns();
+      emit(state.copyWith(
+        error: 'Reorder failed: ${e.toString()}',
+        isReorderInFlight: false,
+      ));
+    }
+  }
+
+  Future<void> _resyncAffectedColumns() async {
+    try {
+      // Fetch all tasks from server
+      final allTasks = await _apiService.fetchAllTasks();
+      
+      // Keep tasks from non-affected statuses, replace affected ones
+      final preservedTasks = state.tasks
+          .where((t) => !_affectedStatuses.contains(t.status))
+          .toList();
+      
+      final affectedTasks = allTasks
+          .where((t) => _affectedStatuses.contains(t.status))
+          .toList();
+      
+      final resyncedTasks = [...preservedTasks, ...affectedTasks];
+      
+      emit(state.copyWith(tasks: resyncedTasks));
+    } catch (e) {
+      // If resync fails, show error and restore previous state
+      emit(state.copyWith(
+        error: 'Failed to resync: ${e.toString()}',
+        isReorderInFlight: false,
+      ));
     }
   }
 

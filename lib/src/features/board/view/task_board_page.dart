@@ -97,9 +97,16 @@ class TaskBoardPage extends StatelessWidget {
                                       child: TaskColumn(
                                         status: status,
                                         tasks: filteredGrouped[status] ?? const [],
+                                        isReorderInFlight: state.isReorderInFlight,
                                         onAdd: () => _showTaskSheet(context, initialStatus: status),
                                         onMove: (taskId, toStatus) =>
                                             context.read<TaskBoardCubit>().moveTask(taskId, toStatus),
+                                        onReorder: (taskId, toStatus, toIndex) =>
+                                            context.read<TaskBoardCubit>().reorderTask(
+                                              taskId: taskId,
+                                              toStatus: toStatus,
+                                              toIndex: toIndex,
+                                            ),
                                         onRemove: (taskId) =>
                                             context.read<TaskBoardCubit>().removeTask(taskId),
                                         onEdit: (task) => _showTaskSheet(context, task: task),

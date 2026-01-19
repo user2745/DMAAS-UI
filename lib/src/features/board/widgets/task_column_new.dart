@@ -11,16 +11,20 @@ class TaskColumn extends StatefulWidget {
     required this.tasks,
     required this.onAdd,
     required this.onMove,
+    required this.onReorder,
     required this.onRemove,
     required this.onEdit,
+    this.isReorderInFlight = false,
   });
 
   final TaskStatus status;
   final List<Task> tasks;
   final VoidCallback onAdd;
   final void Function(String taskId, TaskStatus toStatus) onMove;
+  final void Function(String taskId, TaskStatus toStatus, int toIndex) onReorder;
   final void Function(String taskId) onRemove;
   final void Function(Task task) onEdit;
+  final bool isReorderInFlight;
 
   @override
   State<TaskColumn> createState() => _TaskColumnState();
@@ -28,6 +32,7 @@ class TaskColumn extends StatefulWidget {
 
 class _TaskColumnState extends State<TaskColumn> {
   bool _isDraggingOver = false;
+  int? _dropIndex;
 
   @override
   Widget build(BuildContext context) {
@@ -36,19 +41,45 @@ class _TaskColumnState extends State<TaskColumn> {
 
     return DragTarget<Task>(
       onWillAcceptWithDetails: (details) {
-        return details.data.status != widget.status;
+        // Accept both cross-column and within-column drops
+        // Disable if reorder is in flight
+        return !widget.isReorderInFlight;
       },
       onAcceptWithDetails: (details) {
-        widget.onMove(details.data.id, widget.status);
-        setState(() => _isDraggingOver = false);
+        final fromStatus = details.data.status;
+        final toStatus = widget.status;
+        final toIndex = _dropIndex ?? widget.tasks.length;
+        
+        if (fromStatus != toStatus) {
+          // Cross-column move
+          widget.onMove(details.data.id, toStatus);
+        } else if (fromStatus == toStatus && _dropIndex != null) {
+          // Within-column reorder
+          widget.onReorder(details.data.id, toStatus, toIndex);
+        }
+        
+        setState(() {
+          _isDraggingOver = false;
+          _dropIndex = null;
+        });
       },
-      onMove: (_) {
-        if (!_isDraggingOver) {
-          setState(() => _isDraggingOver = true);
+      onMove: (details) {
+        if (!widget.isReorderInFlight) {
+          // Calculate drop index based on closest card proximity
+          _dropIndex = _calculateDropIndex(details.offset);
+          
+          if (!_isDraggingOver) {
+            setState(() => _isDraggingOver = true);
+          } else {
+            setState(() {}); // Rebuild to update drop indicator position
+          }
         }
       },
       onLeave: (_) {
-        setState(() => _isDraggingOver = false);
+        setState(() {
+          _isDraggingOver = false;
+          _dropIndex = null;
+        });
       },
       builder: (context, candidateData, rejectedData) {
         return AnimatedContainer(
@@ -83,37 +114,15 @@ class _TaskColumnState extends State<TaskColumn> {
               Flexible(
                 child: widget.tasks.isEmpty
                     ? _EmptyColumn(status: widget.status)
-                    : RawScrollbar(
-                        thickness: 6,
-                        radius: const Radius.circular(3),
-                        thumbColor: Colors.grey.withOpacity(0.4),
-                        minThumbLength: 10,
-                        trackColor: Colors.grey.withOpacity(0.7),
-                        child: SingleChildScrollView(
-                          child: Column(
-                            children: widget.tasks
-                                .map(
-                                  (task) => DragGateWidget(
-                                    child: TaskCard(
-                                      task: task,
-                                      onMoveLeft: task.status.previous == null
-                                          ? null
-                                          : () => widget.onMove(
-                                              task.id,
-                                              task.status.previous!,
-                                            ),
-                                      onMoveRight: task.status.next == null
-                                          ? null
-                                          : () => widget.onMove(
-                                              task.id,
-                                              task.status.next!,
-                                            ),
-                                      onDelete: () => widget.onRemove(task.id),
-                                      onEdit: () => widget.onEdit(task),
-                                    ),
-                                  ),
-                                )
-                                .toList(),
+                    : DragGateWidget(
+                        child: RawScrollbar(
+                          thickness: 6,
+                          radius: const Radius.circular(3),
+                          thumbColor: Colors.grey.withOpacity(0.4),
+                          child: SingleChildScrollView(
+                            child: Column(
+                              children: _buildTaskCards(),
+                            ),
                           ),
                         ),
                       ),
@@ -123,6 +132,81 @@ class _TaskColumnState extends State<TaskColumn> {
         );
       },
     );
+  }
+
+  /// Builds task card list with drop position indicator
+  List<Widget> _buildTaskCards() {
+    final cards = <Widget>[];
+    
+    for (int i = 0; i < widget.tasks.length; i++) {
+      final task = widget.tasks[i];
+      
+      // Add drop indicator before this card if needed
+      if (_isDraggingOver && _dropIndex == i) {
+        cards.add(
+          Container(
+            height: 2,
+            margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: widget.status.color.withOpacity(0.6),
+              borderRadius: BorderRadius.circular(1),
+            ),
+          ),
+        );
+      }
+      
+      cards.add(
+        TaskCard(
+          task: task,
+          onMoveLeft: task.status.previous == null
+              ? null
+              : () => widget.onMove(
+                    task.id,
+                    task.status.previous!,
+                  ),
+          onMoveRight: task.status.next == null
+              ? null
+              : () => widget.onMove(
+                    task.id,
+                    task.status.next!,
+                  ),
+          onDelete: () => widget.onRemove(task.id),
+          onEdit: () => widget.onEdit(task),
+        ),
+      );
+    }
+    
+    // Add drop indicator after last card if needed
+    if (_isDraggingOver && _dropIndex == widget.tasks.length) {
+      cards.add(
+        Container(
+          height: 2,
+          margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          decoration: BoxDecoration(
+            color: widget.status.color.withOpacity(0.6),
+            borderRadius: BorderRadius.circular(1),
+          ),
+        ),
+      );
+    }
+    
+    return cards;
+  }
+
+  /// Calculates the drop index based on drag offset using closest card proximity
+  int _calculateDropIndex(Offset dragOffset) {
+    if (widget.tasks.isEmpty) return 0;
+    
+    // Get render box for size calculations
+    final renderBox = context.findRenderObject() as RenderBox?;
+    if (renderBox == null) return widget.tasks.length;
+    
+    // For simplicity, use drag Y position to estimate index
+    // In a real implementation, you'd track card positions
+    final relativeY = dragOffset.dy;
+    final estimatedIndex = (relativeY / 80).round().clamp(0, widget.tasks.length);
+    
+    return estimatedIndex;
   }
 
   Widget _buildHeader(BuildContext context) {

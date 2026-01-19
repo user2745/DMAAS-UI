@@ -116,6 +116,7 @@ class Task extends Equatable {
       'title': title,
       'description': description,
       'status': status.value,
+      'order': order,
       if (dueDate != null) 'dueDate': dueDate?.toIso8601String(),
     };
   }

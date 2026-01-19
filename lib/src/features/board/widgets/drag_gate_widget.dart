@@ -1,43 +1,22 @@
 import 'package:flutter/material.dart';
 
-/// Inherited widget that provides drag gate state to descendants.
-class DragGateProvider extends InheritedWidget {
-  const DragGateProvider({
-    required super.child,
-    required this.canDrag,
-  });
-
-  final bool canDrag;
-
-  static DragGateProvider? maybeOf(BuildContext context) {
-    return context.dependOnInheritedWidgetOfExactType<DragGateProvider>();
-  }
-
-  static DragGateProvider of(BuildContext context) {
-    final result = maybeOf(context);
-    assert(result != null, 'No DragGateProvider found in context');
-    return result!;
-  }
-
-  @override
-  bool updateShouldNotify(DragGateProvider oldWidget) {
-    return canDrag != oldWidget.canDrag;
-  }
-}
-
-/// A widget that gates drag behavior based on pointer movement distance.
+/// A widget that gates drag gestures based on pointer movement distance.
 /// 
-/// If the pointer moves more than [distanceThreshold] pixels before being
-/// released, drag is disabled (allowing scroll). Otherwise, drag is enabled.
+/// This widget prevents unintended drag initiation during scroll interactions
+/// by tracking pointer movement. If the pointer moves more than [distanceThreshold]
+/// pixels from its initial position, drag gestures are absorbed (disabled),
+/// allowing scroll gestures to take priority.
+/// 
+/// The gate is applied per-column to all nested widgets.
 class DragGateWidget extends StatefulWidget {
-  const DragGateWidget({
-    required this.child,
-    this.distanceThreshold = 15,
-    super.key,
-  });
-
   final Widget child;
   final double distanceThreshold;
+
+  const DragGateWidget({
+    Key? key,
+    required this.child,
+    this.distanceThreshold = 15.0,
+  }) : super(key: key);
 
   @override
   State<DragGateWidget> createState() => _DragGateWidgetState();
@@ -46,39 +25,55 @@ class DragGateWidget extends StatefulWidget {
 class _DragGateWidgetState extends State<DragGateWidget> {
   late Offset _initialPointerPosition;
   bool _canDrag = true;
+  bool _isPointerDown = false;
+
+  void _onPointerDown(PointerDownEvent event) {
+    _initialPointerPosition = event.position;
+    _isPointerDown = true;
+    _canDrag = true;
+  }
+
+  void _onPointerMove(PointerMoveEvent event) {
+    if (!_isPointerDown) return;
+
+    final distance = (_initialPointerPosition - event.position).distance;
+
+    if (distance > widget.distanceThreshold && _canDrag) {
+      setState(() {
+        _canDrag = false;
+      });
+    }
+  }
+
+  void _onPointerUp(PointerUpEvent event) {
+    _isPointerDown = false;
+    if (!_canDrag) {
+      setState(() {
+        _canDrag = true;
+      });
+    }
+  }
+
+  void _onPointerCancel(PointerCancelEvent event) {
+    _isPointerDown = false;
+    if (!_canDrag) {
+      setState(() {
+        _canDrag = true;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Listener(
-      onPointerDown: _handlePointerDown,
-      onPointerMove: _handlePointerMove,
-      onPointerUp: _handlePointerUp,
-      child: DragGateProvider(
-        canDrag: _canDrag,
-        child: AbsorbPointer(
-          absorbing: !_canDrag,
-          child: widget.child,
-        ),
+      onPointerDown: _onPointerDown,
+      onPointerMove: _onPointerMove,
+      onPointerUp: _onPointerUp,
+      onPointerCancel: _onPointerCancel,
+      child: AbsorbPointer(
+        absorbing: !_canDrag,
+        child: widget.child,
       ),
     );
-  }
-
-  void _handlePointerDown(PointerDownEvent event) {
-    _initialPointerPosition = event.position;
-    setState(() => _canDrag = true);
-  }
-
-  void _handlePointerMove(PointerMoveEvent event) {
-    if (!_canDrag) return; // Already disabled, no need to check further
-
-    final distance = (event.position - _initialPointerPosition).distance;
-    if (distance > widget.distanceThreshold) {
-      setState(() => _canDrag = false);
-    }
-  }
-
-  void _handlePointerUp(PointerUpEvent event) {
-    // Reset state on pointer up for next gesture
-    setState(() => _canDrag = true);
   }
 }
