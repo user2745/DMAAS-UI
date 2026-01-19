@@ -31,10 +31,7 @@ class TaskCard extends StatelessWidget {
           child: _buildCardContent(context, isDragging: true),
         ),
       ),
-      childWhenDragging: Opacity(
-        opacity: 0.3,
-        child: _buildCardContent(context),
-      ),
+      childWhenDragging: const SizedBox.shrink(),
       child: GestureDetector(
         onTap: () => TaskDetailModal.show(context, task: task),
         child: _buildCardContent(context),

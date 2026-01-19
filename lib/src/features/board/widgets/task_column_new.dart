@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../models/task.dart';
+import '../utils/drop_position_calculator.dart';
 import 'drag_gate_widget.dart';
 import 'task_card_new.dart';
 
@@ -33,6 +34,63 @@ class TaskColumn extends StatefulWidget {
 class _TaskColumnState extends State<TaskColumn> {
   bool _isDraggingOver = false;
   int? _dropIndex;
+  String? _draggedTaskId;
+  final List<GlobalKey> _cardKeys = [];
+  final ScrollController _scrollController = ScrollController();
+
+  @override
+  void initState() {
+    super.initState();
+    _updateCardKeys();
+  }
+
+  @override
+  void didUpdateWidget(TaskColumn oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.tasks.length != widget.tasks.length) {
+      _updateCardKeys();
+    }
+  }
+
+  void _updateCardKeys() {
+    _cardKeys.clear();
+    for (int i = 0; i < widget.tasks.length; i++) {
+      _cardKeys.add(GlobalKey());
+    }
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  /// Returns the tasks list with live reordering during drag
+  List<Task> _getLiveReorderedTasks() {
+    if (_draggedTaskId == null || _dropIndex == null) {
+      return widget.tasks;
+    }
+    
+    // Find the dragged task
+    final draggedTask = widget.tasks.firstWhere(
+      (t) => t.id == _draggedTaskId,
+      orElse: () => widget.tasks.first,
+    );
+    
+    // If dragging from same column, create temporary reordered list
+    if (draggedTask.status == widget.status) {
+      final reordered = List<Task>.from(widget.tasks);
+      reordered.removeWhere((t) => t.id == _draggedTaskId);
+      
+      // Insert at drop index
+      final insertIndex = _dropIndex!.clamp(0, reordered.length);
+      reordered.insert(insertIndex, draggedTask);
+      
+      return reordered;
+    }
+    
+    return widget.tasks;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -61,10 +119,14 @@ class _TaskColumnState extends State<TaskColumn> {
         setState(() {
           _isDraggingOver = false;
           _dropIndex = null;
+          _draggedTaskId = null;
         });
       },
       onMove: (details) {
         if (!widget.isReorderInFlight) {
+          // Store the dragged task ID
+          _draggedTaskId = details.data.id;
+          
           // Calculate drop index based on closest card proximity
           _dropIndex = _calculateDropIndex(details.offset);
           
@@ -79,6 +141,7 @@ class _TaskColumnState extends State<TaskColumn> {
         setState(() {
           _isDraggingOver = false;
           _dropIndex = null;
+          _draggedTaskId = null;
         });
       },
       builder: (context, candidateData, rejectedData) {
@@ -120,6 +183,7 @@ class _TaskColumnState extends State<TaskColumn> {
                           radius: const Radius.circular(3),
                           thumbColor: Colors.grey.withOpacity(0.4),
                           child: SingleChildScrollView(
+                            controller: _scrollController,
                             child: Column(
                               children: _buildTaskCards(),
                             ),
@@ -134,57 +198,60 @@ class _TaskColumnState extends State<TaskColumn> {
     );
   }
 
-  /// Builds task card list with drop position indicator
+  /// Builds task card list with live reordering animation
   List<Widget> _buildTaskCards() {
     final cards = <Widget>[];
     
-    for (int i = 0; i < widget.tasks.length; i++) {
-      final task = widget.tasks[i];
-      
-      // Add drop indicator before this card if needed
-      if (_isDraggingOver && _dropIndex == i) {
-        cards.add(
-          Container(
-            height: 2,
-            margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: widget.status.color.withOpacity(0.6),
-              borderRadius: BorderRadius.circular(1),
-            ),
-          ),
-        );
-      }
-      
-      cards.add(
-        TaskCard(
-          task: task,
-          onMoveLeft: task.status.previous == null
-              ? null
-              : () => widget.onMove(
-                    task.id,
-                    task.status.previous!,
-                  ),
-          onMoveRight: task.status.next == null
-              ? null
-              : () => widget.onMove(
-                    task.id,
-                    task.status.next!,
-                  ),
-          onDelete: () => widget.onRemove(task.id),
-          onEdit: () => widget.onEdit(task),
-        ),
-      );
-    }
+    // Use live reordered list during drag
+    final displayTasks = _getLiveReorderedTasks();
     
-    // Add drop indicator after last card if needed
-    if (_isDraggingOver && _dropIndex == widget.tasks.length) {
+    for (int i = 0; i < displayTasks.length; i++) {
+      final task = displayTasks[i];
+      
+      // Determine if this is the dragged card
+      final isDraggedCard = task.id == _draggedTaskId && 
+                           task.status == widget.status;
+      
       cards.add(
-        Container(
-          height: 2,
-          margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          decoration: BoxDecoration(
-            color: widget.status.color.withOpacity(0.6),
-            borderRadius: BorderRadius.circular(1),
+        AnimatedSwitcher(
+          duration: const Duration(milliseconds: 200),
+          switchInCurve: Curves.easeOut,
+          switchOutCurve: Curves.easeIn,
+          transitionBuilder: (child, animation) {
+            return SlideTransition(
+              position: Tween<Offset>(
+                begin: const Offset(0, -0.3),
+                end: Offset.zero,
+              ).animate(animation),
+              child: FadeTransition(
+                opacity: animation,
+                child: child,
+              ),
+            );
+          },
+          child: KeyedSubtree(
+            key: _cardKeys.length > i ? _cardKeys[i] : null,
+            child: Opacity(
+              key: ValueKey('${task.id}_${i}'),
+              opacity: isDraggedCard ? 0.3 : 1.0,
+              child: TaskCard(
+                task: task,
+                onMoveLeft: task.status.previous == null
+                    ? null
+                    : () => widget.onMove(
+                          task.id,
+                          task.status.previous!,
+                        ),
+                onMoveRight: task.status.next == null
+                    ? null
+                    : () => widget.onMove(
+                          task.id,
+                          task.status.next!,
+                        ),
+                onDelete: () => widget.onRemove(task.id),
+                onEdit: () => widget.onEdit(task),
+              ),
+            ),
           ),
         ),
       );
@@ -193,20 +260,41 @@ class _TaskColumnState extends State<TaskColumn> {
     return cards;
   }
 
-  /// Calculates the drop index based on drag offset using closest card proximity
+  /// Calculates the drop index based on drag offset using actual card positions
   int _calculateDropIndex(Offset dragOffset) {
     if (widget.tasks.isEmpty) return 0;
     
-    // Get render box for size calculations
-    final renderBox = context.findRenderObject() as RenderBox?;
-    if (renderBox == null) return widget.tasks.length;
+    // Get actual card positions from the live reordered list
+    final displayTasks = _getLiveReorderedTasks();
+    final cardPositions = <Rect>[];
     
-    // For simplicity, use drag Y position to estimate index
-    // In a real implementation, you'd track card positions
-    final relativeY = dragOffset.dy;
-    final estimatedIndex = (relativeY / 80).round().clamp(0, widget.tasks.length);
+    for (final key in _cardKeys) {
+      final renderBox = key.currentContext?.findRenderObject() as RenderBox?;
+      if (renderBox != null && renderBox.hasSize) {
+        final position = renderBox.localToGlobal(Offset.zero);
+        cardPositions.add(position & renderBox.size);
+      }
+    }
     
-    return estimatedIndex;
+    if (cardPositions.isEmpty) {
+      // Fallback: use drag Y relative to column
+      final columnBox = context.findRenderObject() as RenderBox?;
+      if (columnBox != null) {
+        final localOffset = columnBox.globalToLocal(dragOffset);
+        final relativePosition = localOffset.dy / columnBox.size.height;
+        return (relativePosition * displayTasks.length).round().clamp(0, displayTasks.length);
+      }
+      return displayTasks.length;
+    }
+    
+    // Use DropPositionCalculator with actual positions
+    final scrollOffset = _scrollController.hasClients ? _scrollController.offset : 0.0;
+    
+    return DropPositionCalculator.calculateClosestCardIndex(
+      dragOffset: dragOffset,
+      cardGlobalPositions: cardPositions,
+      columnScrollOffset: scrollOffset,
+    );
   }
 
   Widget _buildHeader(BuildContext context) {
