@@ -81,6 +81,7 @@ class Task extends Equatable {
     this.description,
     this.dueDate,
     this.fieldValues,
+    this.categoryId,
   });
 
   final String id;
@@ -91,6 +92,7 @@ class Task extends Equatable {
   final int order;
   final DateTime? dueDate;
   final Map<String, dynamic>? fieldValues;
+  final String? categoryId;
 
   factory Task.fromJson(Map<String, dynamic> json) {
     return Task(
@@ -108,6 +110,7 @@ class Task extends Equatable {
           : (json['fieldValues'] is Map
                 ? Map<String, dynamic>.from(json['fieldValues'] as Map)
                 : null),
+      categoryId: json['categoryId'],
     );
   }
 
@@ -118,6 +121,8 @@ class Task extends Equatable {
       'status': status.value,
       'order': order,
       if (dueDate != null) 'dueDate': dueDate?.toIso8601String(),
+      if (fieldValues != null) 'fieldValues': fieldValues,
+      if (categoryId != null) 'categoryId': categoryId,
     };
   }
 
@@ -130,6 +135,7 @@ class Task extends Equatable {
     int? order,
     DateTime? dueDate,
     Map<String, dynamic>? fieldValues,
+    String? categoryId,
   }) {
     return Task(
       id: id ?? this.id,
@@ -140,6 +146,7 @@ class Task extends Equatable {
       order: order ?? this.order,
       dueDate: dueDate ?? this.dueDate,
       fieldValues: fieldValues ?? this.fieldValues,
+      categoryId: categoryId ?? this.categoryId,
     );
   }
 
@@ -153,5 +160,6 @@ class Task extends Equatable {
     order,
     dueDate,
     fieldValues,
+    categoryId,
   ];
 }

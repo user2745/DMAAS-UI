@@ -1,9 +1,11 @@
+import 'dart:async';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../board/data/task_api_service.dart';
 import '../../board/models/task.dart';
+import '../data/field_api_service.dart';
 import '../models/field.dart';
 import '../models/assignee.dart';
 
@@ -141,26 +143,75 @@ class TasksListState extends Equatable {
 enum TaskSortKey { manual, title, status, dueDate, createdAt }
 
 class TasksListCubit extends Cubit<TasksListState> {
-  TasksListCubit({TaskApiService? taskApiService})
-    : _taskApiService = taskApiService ?? TaskApiService(),
-      super(
-        const TasksListState(
-          tasks: [],
-          fields: [],
-          taskFieldById: {},
-          taskAssigneesById: {},
-          taskFieldValuesByTaskId: {},
-        ),
-      );
+  TasksListCubit({
+    TaskApiService? taskApiService,
+    FieldApiService? fieldApiService,
+  })  : _taskApiService = taskApiService ?? TaskApiService(),
+        _fieldApiService = fieldApiService ?? FieldApiService(),
+        super(
+          const TasksListState(
+            tasks: [],
+            fields: [],
+            taskFieldById: {},
+            taskAssigneesById: {},
+            taskFieldValuesByTaskId: {},
+          ),
+        ) {
+    _scheduleDailySync();
+  }
 
   final TaskApiService _taskApiService;
+  final FieldApiService _fieldApiService;
+  Timer? _syncTimer;
+
+  @override
+  Future<void> close() {
+    _syncTimer?.cancel();
+    return super.close();
+  }
+
+  void _scheduleDailySync() {
+    // Calculate time until next UTC 12:00
+    final now = DateTime.now().toUtc();
+    var nextSync = DateTime.utc(now.year, now.month, now.day, 12, 0);
+    
+    // If we've already passed 12:00 UTC today, schedule for tomorrow
+    if (now.isAfter(nextSync)) {
+      nextSync = nextSync.add(const Duration(days: 1));
+    }
+    
+    final initialDelay = nextSync.difference(now);
+    
+    // Schedule first sync
+    Future.delayed(initialDelay, () async {
+      await _performScheduledSync();
+      
+      // Then schedule daily syncs
+      _syncTimer = Timer.periodic(const Duration(days: 1), (_) async {
+        await _performScheduledSync();
+      });
+    });
+  }
+
+  Future<void> _performScheduledSync() async {
+    try {
+      await _fieldApiService.syncFields(state.fields);
+    } catch (e) {
+      // Log but don't interrupt user experience
+      debugPrint('Scheduled field sync failed: $e');
+    }
+  }
 
   Future<void> loadInitialData() async {
     emit(state.copyWith(isLoading: true, error: null));
     try {
+      // Load both tasks and fields from API
       final tasksResult = await _taskApiService.fetchAllTasks();
+      final fieldsResult = await _fieldApiService.fetchFields();
+      
       final orderedTasks = List<Task>.from(tasksResult)
         ..sort((a, b) => a.order.compareTo(b.order));
+      
       // Build field values map from fetched tasks, if present
       final values = <String, Map<String, Object?>>{};
       for (final t in orderedTasks) {
@@ -168,9 +219,11 @@ class TasksListCubit extends Cubit<TasksListState> {
           values[t.id] = Map<String, Object?>.from(t.fieldValues!);
         }
       }
+      
       emit(
         state.copyWith(
           tasks: orderedTasks,
+          fields: fieldsResult,
           taskFieldValuesByTaskId: values.isNotEmpty
               ? values
               : state.taskFieldValuesByTaskId,
@@ -221,8 +274,9 @@ class TasksListCubit extends Cubit<TasksListState> {
       color: _hexToColor(color),
       createdAt: DateTime.now(),
     );
+    
+    // Optimistically update UI
     final updatedFields = [...state.fields, newField];
-    // Initialize null values for existing tasks
     final values = Map<String, Map<String, Object?>>.from(
       state.taskFieldValuesByTaskId,
     );
@@ -233,6 +287,22 @@ class TasksListCubit extends Cubit<TasksListState> {
     emit(
       state.copyWith(fields: updatedFields, taskFieldValuesByTaskId: values),
     );
+    
+    // Persist to backend immediately
+    try {
+      final createdField = await _fieldApiService.createField(newField);
+      // Update with server-generated data if needed
+      final serverFields = state.fields
+          .map((f) => f.id == newField.id ? createdField : f)
+          .toList();
+      emit(state.copyWith(fields: serverFields));
+    } catch (e) {
+      // Roll back on failure
+      final rolledBackFields = state.fields
+          .where((f) => f.id != newField.id)
+          .toList();
+      emit(state.copyWith(fields: rolledBackFields, error: e.toString()));
+    }
   }
 
   Future<void> updateField({
@@ -240,6 +310,8 @@ class TasksListCubit extends Cubit<TasksListState> {
     required String name,
     required String color,
   }) async {
+    // Optimistically update UI
+    final oldFields = state.fields;
     final updatedFields = state.fields
         .map(
           (f) => f.id == fieldId
@@ -252,24 +324,34 @@ class TasksListCubit extends Cubit<TasksListState> {
         )
         .toList();
     emit(state.copyWith(fields: updatedFields));
+    
+    // Persist to backend immediately
+    try {
+      final field = updatedFields.firstWhere((f) => f.id == fieldId);
+      await _fieldApiService.updateField(fieldId, field);
+    } catch (e) {
+      // Roll back on failure
+      emit(state.copyWith(fields: oldFields, error: e.toString()));
+    }
   }
 
   Future<void> deleteField(String fieldId) async {
+    // Store old state for rollback
+    final oldFields = state.fields;
+    final oldTaskFieldById = state.taskFieldById;
+    final oldTaskFieldValuesByTaskId = state.taskFieldValuesByTaskId;
+    
+    // Optimistically update UI
     final updatedFields = state.fields.where((f) => f.id != fieldId).toList();
     final updatedTaskFieldById = Map<String, String?>.from(state.taskFieldById)
       ..removeWhere((_, value) => value == fieldId);
-    emit(
-      state.copyWith(
-        fields: updatedFields,
-        taskFieldById: updatedTaskFieldById,
-      ),
-    );
     final values = Map<String, Map<String, Object?>>.from(
       state.taskFieldValuesByTaskId,
     );
     for (final entry in values.entries) {
       entry.value.remove(fieldId);
     }
+    
     emit(
       state.copyWith(
         fields: updatedFields,
@@ -277,6 +359,21 @@ class TasksListCubit extends Cubit<TasksListState> {
         taskFieldValuesByTaskId: values,
       ),
     );
+    
+    // Persist to backend immediately (soft delete)
+    try {
+      await _fieldApiService.deleteField(fieldId);
+    } catch (e) {
+      // Roll back on failure
+      emit(
+        state.copyWith(
+          fields: oldFields,
+          taskFieldById: oldTaskFieldById,
+          taskFieldValuesByTaskId: oldTaskFieldValuesByTaskId,
+          error: e.toString(),
+        ),
+      );
+    }
   }
 
   Future<void> createTask({
