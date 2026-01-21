@@ -2,18 +2,22 @@ import 'dart:async';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../tasks_list/models/field.dart';
 import '../data/task_api_service.dart';
+import '../../tasks_list/data/field_api_service.dart';
 import '../models/task.dart';
 
 class TaskBoardState extends Equatable {
   const TaskBoardState({
     required this.tasks,
+    this.fields = const [],
     this.isLoading = false,
     this.error,
     this.isReorderInFlight = false,
   });
 
   final List<Task> tasks;
+  final List<Field> fields;
   final bool isLoading;
   final String? error;
   final bool isReorderInFlight;
@@ -38,31 +42,56 @@ class TaskBoardState extends Equatable {
 
   TaskBoardState copyWith({
     List<Task>? tasks,
+    List<Field>? fields,
     bool? isLoading,
     String? error,
     bool? isReorderInFlight,
   }) =>
       TaskBoardState(
         tasks: tasks ?? this.tasks,
+        fields: fields ?? this.fields,
         isLoading: isLoading ?? this.isLoading,
         error: error,
         isReorderInFlight: isReorderInFlight ?? this.isReorderInFlight,
       );
 
   @override
-  List<Object?> get props => [tasks, isLoading, error, isReorderInFlight];
+  List<Object?> get props => [tasks, fields, isLoading, error, isReorderInFlight];
 }
 
 class TaskBoardCubit extends Cubit<TaskBoardState> {
   TaskBoardCubit({
     List<Task> seedTasks = const [],
     TaskApiService? apiService,
+    FieldApiService? fieldApiService,
   })  : _apiService = apiService ?? TaskApiService(),
-        super(TaskBoardState(tasks: List<Task>.from(seedTasks)));
+        _fieldApiService = fieldApiService ?? FieldApiService(),
+        super(TaskBoardState(tasks: List<Task>.from(seedTasks))) {
+    _loadInitialData();
+  }
 
   final TaskApiService _apiService;
+  final FieldApiService _fieldApiService;
   Timer? _reorderDebounceTimer;
   final Set<TaskStatus> _affectedStatuses = {};
+
+  Future<void> _loadInitialData() async {
+    try {
+      final fields = await _fieldApiService.fetchFields();
+      emit(state.copyWith(fields: fields));
+    } catch (e) {
+      // Silently fail - fields are optional for display
+    }
+  }
+
+  Future<void> loadFields() async {
+    try {
+      final fields = await _fieldApiService.fetchFields();
+      emit(state.copyWith(fields: fields));
+    } catch (e) {
+      // Silently fail - fields are optional for display
+    }
+  }
 
   @override
   Future<void> close() {
@@ -74,7 +103,8 @@ class TaskBoardCubit extends Cubit<TaskBoardState> {
     emit(state.copyWith(isLoading: true, error: null));
     try {
       final tasks = await _apiService.fetchAllTasks();
-      emit(state.copyWith(tasks: tasks, isLoading: false));
+      final fields = await _fieldApiService.fetchFields();
+      emit(state.copyWith(tasks: tasks, fields: fields, isLoading: false));
     } catch (e) {
       emit(state.copyWith(
         isLoading: false,

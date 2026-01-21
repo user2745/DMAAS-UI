@@ -212,11 +212,20 @@ class TasksListCubit extends Cubit<TasksListState> {
       final orderedTasks = List<Task>.from(tasksResult)
         ..sort((a, b) => a.order.compareTo(b.order));
       
-      // Build field values map from fetched tasks, if present
+      // Build field values map from fetched tasks
+      // Ensure every task has an entry for every field
       final values = <String, Map<String, Object?>>{};
       for (final t in orderedTasks) {
-        if (t.fieldValues != null) {
-          values[t.id] = Map<String, Object?>.from(t.fieldValues!);
+        values[t.id] = {};
+        
+        // Copy any existing field values from task
+        if (t.fieldValues != null && t.fieldValues!.isNotEmpty) {
+          values[t.id]!.addAll(t.fieldValues!);
+        }
+        
+        // Ensure every field has an entry (even if null) for consistency
+        for (final field in fieldsResult) {
+          values[t.id]!.putIfAbsent(field.id, () => null);
         }
       }
       
@@ -224,9 +233,7 @@ class TasksListCubit extends Cubit<TasksListState> {
         state.copyWith(
           tasks: orderedTasks,
           fields: fieldsResult,
-          taskFieldValuesByTaskId: values.isNotEmpty
-              ? values
-              : state.taskFieldValuesByTaskId,
+          taskFieldValuesByTaskId: values,
           isLoading: false,
         ),
       );

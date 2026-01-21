@@ -10,7 +10,7 @@ class FieldApiService {
   FieldApiService({
     this.baseUrl = const String.fromEnvironment(
       'API_BASE_URL',
-      defaultValue: 'http://dmaas.athletex.io',
+      defaultValue: 'https://dmaas.athletex.io',
     ),
     http.Client? httpClient,
   }) : httpClient = httpClient ?? http.Client();

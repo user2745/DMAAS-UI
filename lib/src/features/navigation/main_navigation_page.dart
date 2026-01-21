@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../board/view/task_board_page.dart';
+import '../board/cubit/task_board_cubit.dart';
 import '../today/today_tasks_page.dart';
 import '../tasks_list/view/tasks_list_page.dart';
 
@@ -19,10 +21,19 @@ class _MainNavigationPageState extends State<MainNavigationPage>
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
+    _tabController.addListener(_onTabChanged);
+  }
+
+  void _onTabChanged() {
+    if (_tabController.index == 0) {
+      // Weekly Activities tab - reload fields in case they were updated
+      context.read<TaskBoardCubit>().loadFields();
+    }
   }
 
   @override
   void dispose() {
+    _tabController.removeListener(_onTabChanged);
     _tabController.dispose();
     super.dispose();
   }

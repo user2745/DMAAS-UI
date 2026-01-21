@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../tasks_list/models/field.dart';
 import '../cubit/task_board_cubit.dart';
 import '../cubit/search_cubit.dart';
 import '../models/task.dart';
@@ -10,11 +11,78 @@ import '../widgets/task_column_new.dart';
 import '../widgets/task_editor_sheet.dart';
 import '../widgets/search_bar_widget.dart';
 
-class TaskBoardPage extends StatelessWidget {
+class TaskBoardPage extends StatefulWidget {
   const TaskBoardPage({super.key});
 
   @override
+  State<TaskBoardPage> createState() => _TaskBoardPageState();
+}
+
+class _TaskBoardPageState extends State<TaskBoardPage> with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
+
+  @override
+  void initState() {
+    super.initState();
+    // Load fields when page is first created
+    context.read<TaskBoardCubit>().loadFields();
+  }
+
+  @override
+  void didUpdateWidget(TaskBoardPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Reload fields when widget updates (e.g., after returning from another tab)
+    context.read<TaskBoardCubit>().loadFields();
+  }
+
+  /// Extract unique field names and values from all tasks for filter options
+  Map<String, (String, List<String>)> _getAvailableFields(
+    List<Task> tasks,
+    List<Field> fields,
+  ) {
+    final fieldMap = <String, String>{};
+    
+    // Build a map of fieldId -> fieldName from loaded fields
+    for (final field in fields) {
+      fieldMap[field.id] = field.name;
+    }
+
+    final resultMap = <String, (String, Set<String>)>{};
+
+    for (final task in tasks) {
+      if (task.fieldValues != null) {
+        for (final entry in task.fieldValues!.entries) {
+          final fieldId = entry.key;
+          final value = entry.value;
+
+          if (!resultMap.containsKey(fieldId)) {
+            // Use loaded field name, or fieldId as fallback
+            final fieldName = fieldMap[fieldId] ?? fieldId;
+            resultMap[fieldId] = (fieldName, <String>{});
+          }
+
+          // Add value to the set of unique values for this field
+          if (value != null) {
+            final valueStr = value is List
+                ? value.map((v) => v.toString()).join(', ')
+                : value.toString();
+            resultMap[fieldId]!.$2.add(valueStr);
+          }
+        }
+      }
+    }
+
+    // Convert to final format: (fieldId, fieldName, sortedOptions)
+    return {
+      for (final entry in resultMap.entries)
+        entry.key: (entry.value.$1, entry.value.$2.toList()..sort()),
+    };
+  }
+
+  @override
   Widget build(BuildContext context) {
+    super.build(context); // Required for AutomaticKeepAliveClientMixin
     return BlocBuilder<TaskBoardCubit, TaskBoardState>(
       builder: (context, state) {
         if (state.isLoading && state.tasks.isEmpty) {
@@ -57,13 +125,19 @@ class TaskBoardPage extends StatelessWidget {
             final searchCubit = context.read<SearchCubit>();
             final grouped = state.groupedByStatus;
             
-            // Filter tasks based on search
+            // Get available fields from current tasks and loaded field metadata
+            final availableFields = _getAvailableFields(state.tasks, state.fields);
+            final filterOptions = availableFields.entries
+                .map((e) => (e.key, e.value.$1, e.value.$2))
+                .toList();
+            
+            // Filter tasks based on search and field filters
             final filteredGrouped = <TaskStatus, List<Task>>{};
             for (final entry in grouped.entries) {
               filteredGrouped[entry.key] = entry.value.where((task) {
                 final searchText = '${task.title} ${task.description ?? ''}'
                     .toLowerCase();
-                return searchCubit.matchesSearch(searchText);
+                return searchCubit.matches(searchText, task.fieldValues);
               }).toList();
             }
 
@@ -73,6 +147,13 @@ class TaskBoardPage extends StatelessWidget {
                   onChanged: (query) => searchCubit.updateQuery(query),
                   onClear: () => searchCubit.clearSearch(),
                   onNewTask: () => _showTaskSheet(context),
+                  onFieldFilterChanged: (filter) {
+                    if (filter != null) {
+                      searchCubit.addFieldFilter(filter);
+                    }
+                  },
+                  onClearFilters: () => searchCubit.clearFieldFilters(),
+                  availableFilters: filterOptions,
                 ),
                 Expanded(
                   child: LayoutBuilder(
