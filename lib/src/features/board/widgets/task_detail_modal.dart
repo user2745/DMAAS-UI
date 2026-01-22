@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:intl/intl.dart';
 import '../models/task.dart';
+import '../../tasks_list/models/field.dart';
 import '../cubit/task_board_cubit.dart';
 
 class TaskDetailModal extends StatefulWidget {
@@ -281,26 +283,62 @@ class _TaskDetailModalState extends State<TaskDetailModal> {
                         ],
                       )
                     else
-                      Wrap(
-                        spacing: 16,
-                        runSpacing: 16,
-                        children: [
-                          _buildDetailItem(
-                            context,
-                            icon: Icons.calendar_today_outlined,
-                            label: 'Created',
-                            value: _formatDate(widget.task.createdAt),
-                            color: const Color(0xFFBB86FC),
-                          ),
-                          if (_dueDate != null)
+                      BlocBuilder<TaskBoardCubit, TaskBoardState>(
+                        builder: (context, boardState) {
+                          final items = <Widget>[];
+                          
+                          // Add Created date
+                          items.add(
                             _buildDetailItem(
                               context,
-                              icon: Icons.event_outlined,
-                              label: 'Due Date',
-                              value: _formatDate(_dueDate!),
-                              color: const Color(0xFFFF9800),
+                              icon: Icons.calendar_today_outlined,
+                              label: 'Created',
+                              value: _formatDate(widget.task.createdAt),
+                              color: const Color(0xFFBB86FC),
                             ),
-                        ],
+                          );
+                          
+                          // Add Due Date if present
+                          if (_dueDate != null) {
+                            items.add(
+                              _buildDetailItem(
+                                context,
+                                icon: Icons.event_outlined,
+                                label: 'Due Date',
+                                value: _formatDate(_dueDate!),
+                                color: const Color(0xFFFF9800),
+                              ),
+                            );
+                          }
+                          
+                          // Add custom fields with non-null values
+                          for (final field in boardState.fields) {
+                            final fieldValue = widget.task.fieldValues?[field.id];
+                            if (fieldValue != null && 
+                                fieldValue.toString().isNotEmpty &&
+                                fieldValue.toString() != '{}' &&
+                                fieldValue.toString() != '[]') {
+                              
+                              final displayValue = _formatFieldValue(field, fieldValue);
+                              
+                              items.add(
+                                _buildDetailItem(
+                                  context,
+                                  icon: _getFieldIcon(field.type),
+                                  label: field.name,
+                                  value: displayValue,
+                                  color: field.color,
+                                ),
+                              );
+                            }
+                          }
+                          
+                          return Wrap(
+                            spacing: 16,
+                            runSpacing: 16,
+                            children: items,
+                          );
+                        },
                       ),
                     if (!_isEditing) ...[
                       const SizedBox(height: 20),
@@ -455,5 +493,35 @@ class _TaskDetailModalState extends State<TaskDetailModal> {
 
   String _formatDate(DateTime date) {
     return '${date.month}/${date.day}/${date.year}';
+  }
+
+  IconData _getFieldIcon(FieldType type) {
+    switch (type) {
+      case FieldType.text:
+        return Icons.text_fields_outlined;
+      case FieldType.singleSelect:
+        return Icons.tag_outlined;
+      case FieldType.date:
+        return Icons.calendar_today_outlined;
+    }
+  }
+
+  String _formatFieldValue(Field field, dynamic value) {
+    if (value == null) return '';
+    
+    switch (field.type) {
+      case FieldType.date:
+        try {
+          final date = value is DateTime 
+              ? value 
+              : DateTime.parse(value.toString());
+          return DateFormat('MMM d, yyyy').format(date);
+        } catch (e) {
+          return value.toString();
+        }
+      case FieldType.singleSelect:
+      case FieldType.text:
+        return value.toString();
+    }
   }
 }

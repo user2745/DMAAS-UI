@@ -178,6 +178,7 @@ class _TaskBoardPageState extends State<TaskBoardPage> with AutomaticKeepAliveCl
                                       child: TaskColumn(
                                         status: status,
                                         tasks: filteredGrouped[status] ?? const [],
+                                        fields: state.fields,
                                         isReorderInFlight: state.isReorderInFlight,
                                         onAdd: () => _showTaskSheet(context, initialStatus: status),
                                         onMove: (taskId, toStatus) =>

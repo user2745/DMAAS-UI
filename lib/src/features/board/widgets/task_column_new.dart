@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../tasks_list/models/field.dart';
 import '../models/task.dart';
 import '../utils/drop_position_calculator.dart';
 import 'drag_gate_widget.dart';
@@ -15,6 +16,7 @@ class TaskColumn extends StatefulWidget {
     required this.onReorder,
     required this.onRemove,
     required this.onEdit,
+    this.fields = const [],
     this.isReorderInFlight = false,
   });
 
@@ -25,6 +27,7 @@ class TaskColumn extends StatefulWidget {
   final void Function(String taskId, TaskStatus toStatus, int toIndex) onReorder;
   final void Function(String taskId) onRemove;
   final void Function(Task task) onEdit;
+  final List<Field> fields;
   final bool isReorderInFlight;
 
   @override
@@ -232,10 +235,11 @@ class _TaskColumnState extends State<TaskColumn> {
           child: KeyedSubtree(
             key: _cardKeys.length > i ? _cardKeys[i] : null,
             child: Opacity(
-              key: ValueKey('${task.id}_${i}'),
+              key: ValueKey('${task.id}_$i'),
               opacity: isDraggedCard ? 0.3 : 1.0,
               child: TaskCard(
                 task: task,
+                fields: widget.fields,
                 onMoveLeft: task.status.previous == null
                     ? null
                     : () => widget.onMove(

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
+import '../../tasks_list/models/field.dart';
 import '../models/task.dart';
 import 'task_detail_modal.dart';
 
@@ -11,6 +13,7 @@ class TaskCard extends StatelessWidget {
     required this.onMoveRight,
     required this.onDelete,
     required this.onEdit,
+    this.fields = const [],
   });
 
   final Task task;
@@ -18,6 +21,7 @@ class TaskCard extends StatelessWidget {
   final VoidCallback? onMoveRight;
   final VoidCallback onDelete;
   final VoidCallback onEdit;
+  final List<Field> fields;
 
   @override
   Widget build(BuildContext context) {
@@ -207,6 +211,7 @@ class TaskCard extends StatelessWidget {
                         label: _timeAgo(task.createdAt),
                         color: const Color(0xFF8B949E),
                       ),
+                      ..._buildFieldPills(context),
                     ],
                   ),
                   const SizedBox(height: 8),
@@ -229,6 +234,51 @@ class TaskCard extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  List<Widget> _buildFieldPills(BuildContext context) {
+    if (task.fieldValues == null || task.fieldValues!.isEmpty) {
+      return [];
+    }
+
+    final pills = <Widget>[];
+    for (final field in fields) {
+      final value = task.fieldValues![field.id];
+      if (value != null) {
+        String displayValue;
+        if (field.type == FieldType.date) {
+          final date = value is DateTime
+              ? value
+              : (value is String ? DateTime.tryParse(value) : null);
+          displayValue = date != null
+              ? DateFormat('MMM d').format(date)
+              : value.toString();
+        } else {
+          displayValue = value.toString();
+        }
+
+        pills.add(
+          _buildPill(
+            context,
+            icon: _getFieldIcon(field.type),
+            label: '${field.name}: $displayValue',
+            color: field.color,
+          ),
+        );
+      }
+    }
+    return pills;
+  }
+
+  IconData _getFieldIcon(FieldType type) {
+    switch (type) {
+      case FieldType.text:
+        return Icons.text_fields;
+      case FieldType.singleSelect:
+        return Icons.check_circle_outline;
+      case FieldType.date:
+        return Icons.calendar_today;
+    }
   }
 
   Widget _buildPill(
