@@ -65,8 +65,8 @@ class _MainNavigationPageState extends State<MainNavigationPage>
           controller: _tabController,
           tabs: const [
             Tab(icon: Icon(Icons.view_week), text: 'Weekly Activities'),
-            Tab(icon: Icon(Icons.today), text: "Today's Tasks"),
-            Tab(icon: Icon(Icons.task_alt), text: 'Tasks List'),
+            Tab(icon: Icon(Icons.today), text: "Today's Activities"),
+            Tab(icon: Icon(Icons.task_alt), text: 'Activities List'),
           ],
         ),
       ),

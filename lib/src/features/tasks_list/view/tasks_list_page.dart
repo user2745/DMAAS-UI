@@ -23,7 +23,7 @@ class _TasksListPageState extends State<TasksListPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Tasks List'), elevation: 0),
+      appBar: AppBar(title: const Text('Activities List'), elevation: 0),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           _showCreateTaskDialog(context);
@@ -250,7 +250,7 @@ class _CreateTaskDialogState extends State<CreateTaskDialog> {
             const SizedBox(height: 16),
             if (widget.fields.isNotEmpty)
               DropdownButtonFormField<String>(
-                value: _selectedFieldId,
+                initialValue: _selectedFieldId,
                 decoration: InputDecoration(
                   labelText: 'Field',
                   border: OutlineInputBorder(
@@ -264,7 +264,7 @@ class _CreateTaskDialogState extends State<CreateTaskDialog> {
                       value: field.id,
                       child: Text(field.name),
                     );
-                  }).toList(),
+                  }),
                 ],
                 onChanged: (value) {
                   setState(() {
