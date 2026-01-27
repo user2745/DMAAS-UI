@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../auth/cubit/auth_cubit.dart';
+import '../auth/cubit/auth_state.dart';
+import '../auth/view/login_page.dart';
 import '../board/view/task_board_page.dart';
 import '../board/cubit/task_board_cubit.dart';
 import '../today/today_tasks_page.dart';
@@ -61,6 +64,69 @@ class _MainNavigationPageState extends State<MainNavigationPage>
             ),
           ],
         ),
+        actions: [
+          BlocBuilder<AuthCubit, AuthState>(
+            builder: (context, authState) {
+              if (authState.status == AuthStatus.authenticated) {
+                // Show account icon with dropdown when logged in
+                return Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  child: PopupMenuButton<String>(
+                    padding: EdgeInsets.zero,
+                    icon: const Icon(Icons.account_circle),
+                    tooltip: 'Account',
+                    onSelected: (value) {
+                      if (value == 'signout') {
+                        context.read<AuthCubit>().signOut();
+                      }
+                    },
+                    itemBuilder: (context) => [
+                      PopupMenuItem<String>(
+                        enabled: false,
+                        child: Text(
+                          authState.user?.email ?? 'User',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFFC9D1D9),
+                          ),
+                        ),
+                      ),
+                      const PopupMenuDivider(),
+                      const PopupMenuItem<String>(
+                        value: 'signout',
+                        child: Row(
+                          children: [
+                            Icon(Icons.logout, size: 20, color: Color(0xFF8B949E)),
+                            SizedBox(width: 12),
+                            Text('Sign Out'),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              } else {
+                // Show account icon that navigates to login when not logged in
+                return Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  child: IconButton(
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(minWidth: 40),
+                    icon: const Icon(Icons.account_circle_outlined),
+                    tooltip: 'Sign In',
+                    onPressed: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => const LoginPage(),
+                        ),
+                      );
+                    },
+                  ),
+                );
+              }
+            },
+          ),
+        ],
         bottom: TabBar(
           controller: _tabController,
           tabs: const [
