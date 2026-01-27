@@ -104,7 +104,7 @@ class _TaskEditorSheetState extends State<TaskEditorSheet> {
             ),
             const SizedBox(height: 12),
             DropdownButtonFormField<TaskStatus>(
-              value: _status,
+              initialValue: _status,
               decoration: const InputDecoration(labelText: 'Status'),
               items: TaskStatus.values
                   .map(

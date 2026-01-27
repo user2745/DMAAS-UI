@@ -82,7 +82,7 @@ class _CreateFieldDialogState extends State<CreateFieldDialog> {
             ),
             const SizedBox(height: 16),
             DropdownButtonFormField<FieldType>(
-              value: _selectedType,
+              initialValue: _selectedType,
               decoration: InputDecoration(
                 labelText: 'Field Type',
                 border: OutlineInputBorder(
@@ -242,7 +242,7 @@ class FieldSelector extends StatelessWidget {
                 selectedColor: field.color.withOpacity(0.2),
               ),
             );
-          }).toList(),
+          }),
         ],
       ),
     );

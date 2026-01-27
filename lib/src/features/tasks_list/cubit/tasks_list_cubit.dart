@@ -62,9 +62,9 @@ class TasksListState extends Equatable {
         case TaskSortKey.dueDate:
           final ad = a.dueDate;
           final bd = b.dueDate;
-          if (ad == null && bd == null)
+          if (ad == null && bd == null) {
             cmp = 0;
-          else if (ad == null)
+          } else if (ad == null)
             cmp = 1; // nulls last when ascending
           else if (bd == null)
             cmp = -1;

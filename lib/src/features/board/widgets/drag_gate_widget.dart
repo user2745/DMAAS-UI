@@ -13,10 +13,10 @@ class DragGateWidget extends StatefulWidget {
   final double distanceThreshold;
 
   const DragGateWidget({
-    Key? key,
+    super.key,
     required this.child,
     this.distanceThreshold = 15.0,
-  }) : super(key: key);
+  });
 
   @override
   State<DragGateWidget> createState() => _DragGateWidgetState();

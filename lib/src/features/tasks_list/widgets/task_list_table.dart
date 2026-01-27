@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 
 import '../../board/models/task.dart';
 import '../cubit/tasks_list_cubit.dart';
 import '../models/field.dart';
+import '../widgets/field_widgets.dart';
 
 class TaskListTable extends StatefulWidget {
   const TaskListTable({
@@ -209,17 +211,89 @@ class _TaskListTableState extends State<TaskListTable> {
                     ...widget.fields.map((field) {
                       return SizedBox(
                         width: 140,
-                        child: Text(
-                          field.name,
-                          style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                                color: field.color,
-                                fontWeight: FontWeight.w600,
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                field.name,
+                                style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                                      color: field.color,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                            ),
+                            PopupMenuButton<String>(
+                              icon: Icon(Icons.more_vert, size: 16, color: Colors.grey[600]),
+                              padding: EdgeInsets.zero,
+                              iconSize: 16,
+                              tooltip: 'Field options',
+                              offset: const Offset(0, 40),
+                              itemBuilder: (context) => [
+                                PopupMenuItem(
+                                  value: 'sort_asc',
+                                  child: Row(
+                                    children: [
+                                      Icon(Icons.arrow_upward, size: 16, color: Colors.grey[700]),
+                                      const SizedBox(width: 8),
+                                      const Text('Sort A → Z'),
+                                    ],
+                                  ),
+                                ),
+                                PopupMenuItem(
+                                  value: 'sort_desc',
+                                  child: Row(
+                                    children: [
+                                      Icon(Icons.arrow_downward, size: 16, color: Colors.grey[700]),
+                                      const SizedBox(width: 8),
+                                      const Text('Sort Z → A'),
+                                    ],
+                                  ),
+                                ),
+                                const PopupMenuDivider(),
+                                PopupMenuItem(
+                                  value: 'edit',
+                                  child: Row(
+                                    children: [
+                                      Icon(Icons.edit_outlined, size: 16, color: Colors.grey[700]),
+                                      const SizedBox(width: 8),
+                                      const Text('Edit Field'),
+                                    ],
+                                  ),
+                                ),
+                                PopupMenuItem(
+                                  value: 'delete',
+                                  child: Row(
+                                    children: [
+                                      const Icon(Icons.delete_outline, size: 16, color: Colors.red),
+                                      const SizedBox(width: 8),
+                                      Text('Delete Field', style: TextStyle(color: Colors.red[700])),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                              onSelected: (value) {
+                                switch (value) {
+                                  case 'sort_asc':
+                                    _sortByField(field.id, ascending: true);
+                                    break;
+                                  case 'sort_desc':
+                                    _sortByField(field.id, ascending: false);
+                                    break;
+                                  case 'edit':
+                                    _showEditFieldDialog(context, field);
+                                    break;
+                                  case 'delete':
+                                    _showDeleteFieldConfirmation(context, field);
+                                    break;
+                                }
+                              },
+                            ),
+                          ],
                         ),
                       );
-                    }).toList(),
+                    }),
                     SizedBox(
                       width: 40,
                       child: Tooltip(
@@ -472,7 +546,7 @@ class _TaskListTableState extends State<TaskListTable> {
                                 value: value,
                               ),
                             );
-                          }).toList(),
+                          }),
                           const SizedBox(width: 40),
                         ],
                       ),
@@ -577,7 +651,7 @@ class _TaskListTableState extends State<TaskListTable> {
           const SizedBox(width: 140),
           const SizedBox(width: 140),
           const SizedBox(width: 100),
-          ...widget.fields.map((_) => const SizedBox(width: 140)).toList(),
+          ...widget.fields.map((_) => const SizedBox(width: 140)),
           const SizedBox(width: 40),
         ],
       ),
@@ -694,6 +768,50 @@ class _TaskListTableState extends State<TaskListTable> {
       ),
     );
   }
+
+  void _sortByField(String fieldId, {required bool ascending}) {
+    // TODO: Implement custom field sorting in TasksListCubit
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Sorting by custom field (${ascending ? "A→Z" : "Z→A"})'),
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
+  void _showEditFieldDialog(BuildContext context, Field field) {
+    showDialog(
+      context: context,
+      builder: (context) => CreateFieldDialog(initialField: field),
+    );
+  }
+
+  void _showDeleteFieldConfirmation(BuildContext context, Field field) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Field'),
+        content: Text(
+          'Are you sure you want to delete "${field.name}"?\n\n'
+          'Field values will be preserved in tasks but the column will be hidden.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () {
+              context.read<TasksListCubit>().deleteField(field.id);
+              Navigator.pop(context);
+            },
+            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class TaskEditDialog extends StatefulWidget {
@@ -773,7 +891,7 @@ class _TaskEditDialogState extends State<TaskEditDialog> {
             // Category selection is hidden in this UI version
             const SizedBox(height: 16),
             DropdownButtonFormField<TaskStatus>(
-              value: _selectedStatus,
+              initialValue: _selectedStatus,
               decoration: InputDecoration(
                 labelText: 'Status',
                 border: OutlineInputBorder(
@@ -976,7 +1094,7 @@ class _SingleSelectFieldCell extends StatelessWidget {
         ),
         ...options.map((option) {
           return PopupMenuItem(value: option, child: Text(option));
-        }).toList(),
+        }),
       ],
       onSelected: onChanged,
       child: Container(
