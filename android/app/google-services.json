@@ -1,0 +1,82 @@
+{
+  "project_info": {
+    "project_number": "135077801576",
+    "project_id": "dmaas-17abc",
+    "storage_bucket": "dmaas-17abc.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:135077801576:android:9f88cd8287829e0dec95dd",
+        "android_client_info": {
+          "package_name": "ai.predictionlabs.dmaas_ui"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "135077801576-0fs15gk0cphislk3n986g2f08a7g0tbb.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDbOrlSy37G_c_zbWMIKxu1S-vg7sLw9ow"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "135077801576-0fs15gk0cphislk3n986g2f08a7g0tbb.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "135077801576-cdeln9movc6poaii12f3h59giirpdmhh.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.dmaasUi"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:135077801576:android:af68de49e504114dec95dd",
+        "android_client_info": {
+          "package_name": "com.example.dmaas_ui"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "135077801576-0fs15gk0cphislk3n986g2f08a7g0tbb.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDbOrlSy37G_c_zbWMIKxu1S-vg7sLw9ow"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "135077801576-0fs15gk0cphislk3n986g2f08a7g0tbb.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "135077801576-cdeln9movc6poaii12f3h59giirpdmhh.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.dmaasUi"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
