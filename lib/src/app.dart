@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import 'features/auth/data/auth_repository.dart';
+import 'features/auth/cubit/auth_cubit.dart';
 import 'features/board/cubit/task_board_cubit.dart';
 import 'features/board/cubit/search_cubit.dart';
 import 'features/board/data/task_api_service.dart';
@@ -15,6 +17,11 @@ class TaskBoardApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiBlocProvider(
       providers: [
+        BlocProvider<AuthCubit>(
+          create: (_) => AuthCubit(
+            authRepository: AuthRepository(),
+          ),
+        ),
         BlocProvider<TaskBoardCubit>(
           create: (_) => TaskBoardCubit(
             apiService: TaskApiService(),
