@@ -7,6 +7,7 @@ import 'features/board/cubit/task_board_cubit.dart';
 import 'features/board/cubit/search_cubit.dart';
 import 'features/board/data/task_api_service.dart';
 import 'features/tasks_list/cubit/tasks_list_cubit.dart';
+import 'features/tasks_list/data/field_api_service.dart';
 import 'features/navigation/main_navigation_page.dart';
 import 'theme/app_theme.dart';
 
@@ -23,13 +24,25 @@ class TaskBoardApp extends StatelessWidget {
           ),
         ),
         BlocProvider<TaskBoardCubit>(
-          create: (_) => TaskBoardCubit(
-            apiService: TaskApiService(),
+          create: (context) => TaskBoardCubit(
+            apiService: TaskApiService(
+              tokenProvider: context.read<AuthCubit>().getIdToken,
+            ),
+            fieldApiService: FieldApiService(
+              tokenProvider: context.read<AuthCubit>().getIdToken,
+            ),
           )..loadTasks(),
         ),
         BlocProvider<SearchCubit>(create: (_) => SearchCubit()),
         BlocProvider<TasksListCubit>(
-          create: (_) => TasksListCubit(),
+          create: (context) => TasksListCubit(
+            taskApiService: TaskApiService(
+              tokenProvider: context.read<AuthCubit>().getIdToken,
+            ),
+            fieldApiService: FieldApiService(
+              tokenProvider: context.read<AuthCubit>().getIdToken,
+            ),
+          ),
         ),
       ],
       child: MaterialApp(

@@ -144,10 +144,10 @@ enum TaskSortKey { manual, title, status, dueDate, createdAt }
 
 class TasksListCubit extends Cubit<TasksListState> {
   TasksListCubit({
-    TaskApiService? taskApiService,
-    FieldApiService? fieldApiService,
-  })  : _taskApiService = taskApiService ?? TaskApiService(),
-        _fieldApiService = fieldApiService ?? FieldApiService(),
+    required TaskApiService taskApiService,
+    required FieldApiService fieldApiService,
+  })  : _taskApiService = taskApiService,
+        _fieldApiService = fieldApiService,
         super(
           const TasksListState(
             tasks: [],

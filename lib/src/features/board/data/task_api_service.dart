@@ -6,15 +6,32 @@ import '../models/task.dart';
 class TaskApiService {
   final String baseUrl;
   final http.Client httpClient;
+  final Future<String?> Function()? tokenProvider;
 
   TaskApiService({
     this.baseUrl = const String.fromEnvironment('API_BASE_URL', defaultValue: 'https://dmaas.athletex.io'),
     http.Client? httpClient,
+    this.tokenProvider,
   }) : httpClient = httpClient ?? http.Client();
+
+  Future<Map<String, String>> _headers({bool json = true}) async {
+    final headers = <String, String>{};
+    if (json) {
+      headers['Content-Type'] = 'application/json';
+    }
+    final token = await tokenProvider?.call();
+    if (token != null) {
+      headers['Authorization'] = 'Bearer $token';
+    }
+    return headers;
+  }
 
   Future<List<Task>> fetchAllTasks() async {
     try {
-      final response = await httpClient.get(Uri.parse('$baseUrl/tasks'));
+      final response = await httpClient.get(
+        Uri.parse('$baseUrl/tasks'),
+        headers: await _headers(json: false),
+      );
 
       if (response.statusCode == 200) {
         final List<dynamic> data = jsonDecode(response.body);
@@ -43,7 +60,7 @@ class TaskApiService {
 
       final response = await httpClient.post(
         Uri.parse('$baseUrl/tasks'),
-        headers: {'Content-Type': 'application/json'},
+        headers: await _headers(),
         body: jsonEncode(payload),
       );
 
@@ -84,7 +101,7 @@ class TaskApiService {
 
       final response = await httpClient.patch(
         Uri.parse('$baseUrl/tasks/$taskId'),
-        headers: {'Content-Type': 'application/json'},
+        headers: await _headers(),
         body: jsonEncode(payload),
       );
 
@@ -102,7 +119,7 @@ class TaskApiService {
     try {
       final response = await httpClient.patch(
         Uri.parse('$baseUrl/tasks/reorder'),
-        headers: {'Content-Type': 'application/json'},
+        headers: await _headers(),
         body: jsonEncode({'taskIds': taskIds}),
       );
 
@@ -121,6 +138,7 @@ class TaskApiService {
     try {
       final response = await httpClient.delete(
         Uri.parse('$baseUrl/tasks/$taskId'),
+        headers: await _headers(json: false),
       );
 
       if (response.statusCode != 200 && response.statusCode != 204) {

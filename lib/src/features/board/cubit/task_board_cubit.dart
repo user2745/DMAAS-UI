@@ -62,10 +62,10 @@ class TaskBoardState extends Equatable {
 class TaskBoardCubit extends Cubit<TaskBoardState> {
   TaskBoardCubit({
     List<Task> seedTasks = const [],
-    TaskApiService? apiService,
-    FieldApiService? fieldApiService,
-  })  : _apiService = apiService ?? TaskApiService(),
-        _fieldApiService = fieldApiService ?? FieldApiService(),
+    required TaskApiService apiService,
+    required FieldApiService fieldApiService,
+  })  : _apiService = apiService,
+        _fieldApiService = fieldApiService,
         super(TaskBoardState(tasks: List<Task>.from(seedTasks))) {
     _loadInitialData();
   }
