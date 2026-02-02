@@ -16,6 +16,7 @@ class TasksListState extends Equatable {
     required this.taskFieldById,
     required this.taskAssigneesById,
     required this.taskFieldValuesByTaskId,
+    this.viewMode = TaskViewMode.list,
     this.sortKey = TaskSortKey.manual,
     this.sortAscending = false,
     this.query = '',
@@ -31,6 +32,7 @@ class TasksListState extends Equatable {
   final Map<String, Map<String, Object?>> taskFieldValuesByTaskId;
   // taskId -> [assignees]
   final Map<String, List<Assignee>> taskAssigneesById;
+  final TaskViewMode viewMode;
   final TaskSortKey sortKey;
   final bool sortAscending;
   final String query;
@@ -106,6 +108,7 @@ class TasksListState extends Equatable {
     Map<String, String?>? taskFieldById,
     Map<String, List<Assignee>>? taskAssigneesById,
     Map<String, Map<String, Object?>>? taskFieldValuesByTaskId,
+    TaskViewMode? viewMode,
     TaskSortKey? sortKey,
     bool? sortAscending,
     String? query,
@@ -118,6 +121,7 @@ class TasksListState extends Equatable {
     taskFieldValuesByTaskId:
         taskFieldValuesByTaskId ?? this.taskFieldValuesByTaskId,
     taskAssigneesById: taskAssigneesById ?? this.taskAssigneesById,
+    viewMode: viewMode ?? this.viewMode,
     sortKey: sortKey ?? this.sortKey,
     sortAscending: sortAscending ?? this.sortAscending,
     query: query ?? this.query,
@@ -132,6 +136,7 @@ class TasksListState extends Equatable {
     taskFieldById,
     taskAssigneesById,
     taskFieldValuesByTaskId,
+    viewMode,
     sortKey,
     sortAscending,
     query,
@@ -139,6 +144,8 @@ class TasksListState extends Equatable {
     error,
   ];
 }
+
+enum TaskViewMode { list, calendar, roadmap }
 
 enum TaskSortKey { manual, title, status, dueDate, createdAt }
 
@@ -259,6 +266,10 @@ class TasksListCubit extends Cubit<TasksListState> {
 
   void setQuery(String value) {
     emit(state.copyWith(query: value));
+  }
+
+  void setViewMode(TaskViewMode mode) {
+    emit(state.copyWith(viewMode: mode));
   }
 
   void setSort(TaskSortKey key) {
