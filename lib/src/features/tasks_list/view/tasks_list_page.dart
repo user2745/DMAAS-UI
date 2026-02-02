@@ -1,10 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../board/models/task.dart';
 import '../cubit/tasks_list_cubit.dart';
 import '../models/field.dart';
+import '../widgets/calendar_view.dart';
 import '../widgets/field_widgets.dart';
+import '../widgets/roadmap_view.dart';
+import '../widgets/task_details_dialog.dart';
 import '../widgets/task_list_table.dart';
+import '../widgets/view_toggle_buttons.dart';
 
 class TasksListPage extends StatefulWidget {
   const TasksListPage({super.key});
@@ -23,7 +28,21 @@ class _TasksListPageState extends State<TasksListPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Activities List'), elevation: 0),
+      appBar: AppBar(
+        titleSpacing: 16,
+        title: Row(
+          children: [
+            const Expanded(child: Text('Activities List')),
+            ViewToggleButtons(
+              currentViewMode: context.watch<TasksListCubit>().state.viewMode,
+              onModeSelected: (mode) {
+                context.read<TasksListCubit>().setViewMode(mode);
+              },
+            ),
+          ],
+        ),
+        elevation: 0,
+      ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           _showCreateTaskDialog(context);
@@ -102,50 +121,66 @@ class _TasksListPageState extends State<TasksListPage> {
                         ),
                       ),
                     ),
-                    // Tasks Table
-                    TaskListTable(
-                      tasks: state.sortedTasks,
-                      fields: state.fields,
-                      taskFieldById: state.taskFieldById,
-                      taskFieldValuesByTaskId: state.taskFieldValuesByTaskId,
-                      sortKey: state.sortKey,
-                      sortAscending: state.sortAscending,
-                      onTaskUpdate: (task) {
-                        context.read<TasksListCubit>().updateTask(task);
-                      },
-                      onTaskDelete: (taskId) {
-                        context.read<TasksListCubit>().deleteTask(taskId);
-                      },
-                      onAddField: () {
-                        showDialog(
-                          context: context,
-                          builder: (context) => const CreateFieldDialog(),
-                        );
-                      },
-                      onSortChanged: (key) {
-                        context.read<TasksListCubit>().setSort(key);
-                      },
-                      onAddTask: (title) {
-                        context.read<TasksListCubit>().createTask(
-                          title: title,
-                          description: null,
-                          dueDate: null,
-                          fieldId: null,
-                        );
-                      },
-                      onFieldValueChange: (taskId, fieldId, value) {
-                        context.read<TasksListCubit>().updateTaskFieldValue(
-                          taskId: taskId,
-                          fieldId: fieldId,
-                          value: value,
-                        );
-                      },
-                      onReorder: (oldIndex, newIndex) {
-                        context
-                            .read<TasksListCubit>()
-                            .reorderTasks(oldIndex, newIndex);
-                      },
-                    ),
+                    if (state.viewMode == TaskViewMode.list)
+                      TaskListTable(
+                        tasks: state.sortedTasks,
+                        fields: state.fields,
+                        taskFieldById: state.taskFieldById,
+                        taskFieldValuesByTaskId: state.taskFieldValuesByTaskId,
+                        sortKey: state.sortKey,
+                        sortAscending: state.sortAscending,
+                        onTaskUpdate: (task) {
+                          context.read<TasksListCubit>().updateTask(task);
+                        },
+                        onTaskDelete: (taskId) {
+                          context.read<TasksListCubit>().deleteTask(taskId);
+                        },
+                        onAddField: () {
+                          showDialog(
+                            context: context,
+                            builder: (context) => const CreateFieldDialog(),
+                          );
+                        },
+                        onSortChanged: (key) {
+                          context.read<TasksListCubit>().setSort(key);
+                        },
+                        onAddTask: (title) {
+                          context.read<TasksListCubit>().createTask(
+                            title: title,
+                            description: null,
+                            dueDate: null,
+                            fieldId: null,
+                          );
+                        },
+                        onFieldValueChange: (taskId, fieldId, value) {
+                          context.read<TasksListCubit>().updateTaskFieldValue(
+                            taskId: taskId,
+                            fieldId: fieldId,
+                            value: value,
+                          );
+                        },
+                        onReorder: (oldIndex, newIndex) {
+                          context
+                              .read<TasksListCubit>()
+                              .reorderTasks(oldIndex, newIndex);
+                        },
+                      )
+                    else if (state.viewMode == TaskViewMode.calendar)
+                      CalendarView(
+                        tasks: state.sortedTasks,
+                        onTaskTap: (task) => _showTaskDetails(context, task),
+                      )
+                    else
+                      RoadmapView(
+                        tasks: state.sortedTasks,
+                        onAddTaskAtDate: (date) {
+                          _showCreateTaskDialog(
+                            context,
+                            initialDueDate: date,
+                          );
+                        },
+                        onTaskTap: (task) => _showTaskDetails(context, task),
+                      ),
                   ],
                 ),
               ),
@@ -156,12 +191,16 @@ class _TasksListPageState extends State<TasksListPage> {
     );
   }
 
-  void _showCreateTaskDialog(BuildContext context) {
+  void _showCreateTaskDialog(
+    BuildContext context, {
+    DateTime? initialDueDate,
+  }) {
     final cubit = context.read<TasksListCubit>();
     showDialog(
       context: context,
       builder: (context) => CreateTaskDialog(
         fields: cubit.state.fields,
+        initialDueDate: initialDueDate,
         onSave: (title, description, dueDate, fieldId) {
           cubit.createTask(
             title: title,
@@ -174,16 +213,33 @@ class _TasksListPageState extends State<TasksListPage> {
       ),
     );
   }
+
+  void _showTaskDetails(BuildContext context, Task task) {
+    showDialog(
+      context: context,
+      builder: (context) => TaskDetailsDialog(
+        task: task,
+        onEdit: () {
+          // TODO: Implement edit task dialog
+        },
+        onDelete: () {
+          context.read<TasksListCubit>().deleteTask(task.id);
+        },
+      ),
+    );
+  }
 }
 
 class CreateTaskDialog extends StatefulWidget {
   const CreateTaskDialog({
     super.key,
     required this.fields,
+    this.initialDueDate,
     required this.onSave,
   });
 
   final List<Field> fields;
+  final DateTime? initialDueDate;
   final Function(
     String title,
     String? description,
@@ -208,7 +264,7 @@ class _CreateTaskDialogState extends State<CreateTaskDialog> {
     _titleController = TextEditingController();
     _descriptionController = TextEditingController();
     _selectedFieldId = null;
-    _selectedDueDate = null;
+    _selectedDueDate = widget.initialDueDate;
   }
 
   @override
@@ -295,13 +351,18 @@ class _CreateTaskDialogState extends State<CreateTaskDialog> {
                   IconButton(
                     icon: const Icon(Icons.calendar_today),
                     onPressed: () async {
+                      final now = DateTime.now();
+                      final firstDate = now.subtract(
+                        const Duration(days: 365 * 5),
+                      );
+                      final lastDate = now.add(const Duration(days: 365 * 5));
                       final date = await showDatePicker(
                         context: context,
                         initialDate:
                             _selectedDueDate ??
                             DateTime.now().add(const Duration(days: 7)),
-                        firstDate: DateTime.now(),
-                        lastDate: DateTime.now().add(const Duration(days: 365)),
+                        firstDate: firstDate,
+                        lastDate: lastDate,
                       );
                       if (date != null) {
                         setState(() {
