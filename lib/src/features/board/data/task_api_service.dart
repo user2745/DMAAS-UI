@@ -50,6 +50,7 @@ class TaskApiService {
     String? description,
     String status = 'todo',
     DateTime? dueDate,
+    Map<String, Object?>? fieldValues,
   }) async {
     try {
       final payload = {
@@ -57,6 +58,13 @@ class TaskApiService {
         if (description != null) 'description': description,
         'status': status,
         if (dueDate != null) 'dueDate': dueDate.toIso8601String(),
+        if (fieldValues != null)
+          'fieldValues': fieldValues.map((key, value) {
+            if (value is DateTime) {
+              return MapEntry(key, value.toIso8601String());
+            }
+            return MapEntry(key, value);
+          }),
       };
 
       final response = await httpClient.post(

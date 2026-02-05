@@ -117,12 +117,14 @@ class TaskBoardCubit extends Cubit<TaskBoardState> {
     required String title,
     String? description,
     DateTime? dueDate,
+    Map<String, Object?>? fieldValues,
   }) async {
     try {
       final task = await _apiService.createTask(
         title: title,
         description: description,
         dueDate: dueDate,
+        fieldValues: fieldValues,
       );
       final updated = [task, ...state.tasks];
       emit(state.copyWith(tasks: updated));

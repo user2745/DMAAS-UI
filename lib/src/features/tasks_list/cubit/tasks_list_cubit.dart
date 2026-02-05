@@ -398,26 +398,31 @@ class TasksListCubit extends Cubit<TasksListState> {
     required String title,
     String? description,
     DateTime? dueDate,
-    String? fieldId,
+    Map<String, Object?>? fieldValues,
   }) async {
     try {
       final task = await _taskApiService.createTask(
         title: title,
         description: description,
         dueDate: dueDate,
+        fieldValues: fieldValues,
       );
       final updatedTasks = [...state.tasks, task]
         ..sort((a, b) => a.order.compareTo(b.order));
       final updatedTaskFieldById = Map<String, String?>.from(
         state.taskFieldById,
       );
-      if (fieldId != null) {
-        updatedTaskFieldById[task.id] = fieldId;
+      final updatedFieldValues = Map<String, Map<String, Object?>>.from(
+        state.taskFieldValuesByTaskId,
+      );
+      if (fieldValues != null && fieldValues.isNotEmpty) {
+        updatedFieldValues[task.id] = fieldValues;
       }
       emit(
         state.copyWith(
           tasks: updatedTasks,
           taskFieldById: updatedTaskFieldById,
+          taskFieldValuesByTaskId: updatedFieldValues,
         ),
       );
       // Initialize field values for the new task
