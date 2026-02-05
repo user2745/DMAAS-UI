@@ -1,6 +1,8 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
 
+import 'task_comment.dart';
+
 enum TaskStatus { todo, inProgress, done }
 
 extension TaskStatusX on TaskStatus {
@@ -82,6 +84,7 @@ class Task extends Equatable {
     this.dueDate,
     this.fieldValues,
     this.categoryId,
+    this.comments = const [],
   });
 
   final String id;
@@ -93,6 +96,7 @@ class Task extends Equatable {
   final DateTime? dueDate;
   final Map<String, dynamic>? fieldValues;
   final String? categoryId;
+  final List<TaskComment> comments;
 
   factory Task.fromJson(Map<String, dynamic> json) {
     return Task(
@@ -111,6 +115,11 @@ class Task extends Equatable {
                 ? Map<String, dynamic>.from(json['fieldValues'] as Map)
                 : null),
       categoryId: json['categoryId'],
+      comments: json['comments'] is List
+          ? (json['comments'] as List)
+              .map((c) => TaskComment.fromJson(c as Map<String, dynamic>))
+              .toList()
+          : const [],
     );
   }
 
@@ -136,6 +145,7 @@ class Task extends Equatable {
     DateTime? dueDate,
     Map<String, dynamic>? fieldValues,
     String? categoryId,
+    List<TaskComment>? comments,
   }) {
     return Task(
       id: id ?? this.id,
@@ -147,6 +157,7 @@ class Task extends Equatable {
       dueDate: dueDate ?? this.dueDate,
       fieldValues: fieldValues ?? this.fieldValues,
       categoryId: categoryId ?? this.categoryId,
+      comments: comments ?? this.comments,
     );
   }
 
@@ -161,5 +172,6 @@ class Task extends Equatable {
     dueDate,
     fieldValues,
     categoryId,
+    comments,
   ];
 }
