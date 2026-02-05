@@ -478,6 +478,58 @@ class TasksListCubit extends Cubit<TasksListState> {
     }
   }
 
+  Future<void> addComment({
+    required String taskId,
+    required String text,
+  }) async {
+    try {
+      final comment = await _taskApiService.addComment(
+        taskId: taskId,
+        text: text,
+      );
+      
+      // Update the task in state with the new comment
+      final updatedTasks = state.tasks.map((task) {
+        if (task.id == taskId) {
+          return task.copyWith(
+            comments: [...task.comments, comment],
+          );
+        }
+        return task;
+      }).toList();
+      
+      emit(state.copyWith(tasks: updatedTasks));
+    } catch (e) {
+      emit(state.copyWith(error: e.toString()));
+    }
+  }
+
+  Future<void> deleteComment({
+    required String taskId,
+    required String commentId,
+  }) async {
+    try {
+      await _taskApiService.deleteComment(
+        taskId: taskId,
+        commentId: commentId,
+      );
+      
+      // Update the task in state by removing the comment
+      final updatedTasks = state.tasks.map((task) {
+        if (task.id == taskId) {
+          return task.copyWith(
+            comments: task.comments.where((c) => c.id != commentId).toList(),
+          );
+        }
+        return task;
+      }).toList();
+      
+      emit(state.copyWith(tasks: updatedTasks));
+    } catch (e) {
+      emit(state.copyWith(error: e.toString()));
+    }
+  }
+
   Future<void> updateTaskFieldValue({
     required String taskId,
     required String fieldId,

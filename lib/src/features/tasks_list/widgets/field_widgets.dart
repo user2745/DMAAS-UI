@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../cubit/tasks_list_cubit.dart';
 import '../models/field.dart';
+import '../../../widgets/animated_focus_text_field.dart';
 
 class CreateFieldDialog extends StatefulWidget {
   const CreateFieldDialog({super.key, this.initialField});
@@ -70,15 +71,11 @@ class _CreateFieldDialogState extends State<CreateFieldDialog> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            TextField(
+            // Design Language: Focus-animated input (200ms)
+            AnimatedFocusTextField(
               controller: _nameController,
-              decoration: InputDecoration(
-                labelText: 'Field Name',
-                hintText: 'e.g., Priority, Category, Team',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
+              labelText: 'Field Name',
+              hintText: 'e.g., Priority, Category, Team',
             ),
             const SizedBox(height: 16),
             DropdownButtonFormField<FieldType>(
@@ -108,24 +105,18 @@ class _CreateFieldDialogState extends State<CreateFieldDialog> {
               Row(
                 children: [
                   Expanded(
-                    child: TextField(
+                    child: AnimatedFocusTextField(
                       controller: _optionInputController,
-                      decoration: InputDecoration(
-                        hintText: 'Add option...',
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 12,
-                        ),
-                      ),
+                      hintText: 'Add option...',
                       onChanged: (_) => setState(() {}),
                       onSubmitted: (_) {
                         if (_optionInputController.text.trim().isNotEmpty) {
                           _addOption();
                         }
                       },
+                      textCapitalization: TextCapitalization.sentences,
+                      minLines: 1,
+                      maxLines: 1,
                     ),
                   ),
                   const SizedBox(width: 8),

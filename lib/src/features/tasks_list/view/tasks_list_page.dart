@@ -2,14 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../board/models/task.dart';
+import '../../board/widgets/task_detail_modal.dart';
 import '../cubit/tasks_list_cubit.dart';
 import '../models/field.dart';
 import '../widgets/calendar_view.dart';
 import '../widgets/field_widgets.dart';
 import '../widgets/roadmap_view.dart';
-import '../widgets/task_details_dialog.dart';
 import '../widgets/task_list_table.dart';
 import '../widgets/view_toggle_buttons.dart';
+import '../../../widgets/animated_focus_text_field.dart';
 
 class TasksListPage extends StatefulWidget {
   const TasksListPage({super.key});
@@ -96,15 +97,10 @@ class _TasksListPageState extends State<TasksListPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Filter bar
-                    TextField(
-                      decoration: InputDecoration(
-                        prefixIcon: const Icon(Icons.search),
-                        hintText: 'Filter by keyword or by field',
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
+                    // Design Language: Focus-animated filter input (200ms)
+                    AnimatedFocusTextField(
+                      prefixIcon: const Icon(Icons.search),
+                      hintText: 'Filter by keyword or by field',
                       onChanged: (value) {
                         context.read<TasksListCubit>().setQuery(value);
                       },
@@ -121,66 +117,94 @@ class _TasksListPageState extends State<TasksListPage> {
                         ),
                       ),
                     ),
-                    if (state.viewMode == TaskViewMode.list)
-                      TaskListTable(
-                        tasks: state.sortedTasks,
-                        fields: state.fields,
-                        taskFieldById: state.taskFieldById,
-                        taskFieldValuesByTaskId: state.taskFieldValuesByTaskId,
-                        sortKey: state.sortKey,
-                        sortAscending: state.sortAscending,
-                        onTaskUpdate: (task) {
-                          context.read<TasksListCubit>().updateTask(task);
-                        },
-                        onTaskDelete: (taskId) {
-                          context.read<TasksListCubit>().deleteTask(taskId);
-                        },
-                        onAddField: () {
-                          showDialog(
-                            context: context,
-                            builder: (context) => const CreateFieldDialog(),
+                    // Design Language: View transition animation (200ms)
+                    Builder(
+                      builder: (context) {
+                        final Widget viewBody;
+                        if (state.viewMode == TaskViewMode.list) {
+                          viewBody = TaskListTable(
+                            key: const ValueKey('list_view'),
+                            tasks: state.sortedTasks,
+                            fields: state.fields,
+                            taskFieldById: state.taskFieldById,
+                            taskFieldValuesByTaskId: state.taskFieldValuesByTaskId,
+                            sortKey: state.sortKey,
+                            sortAscending: state.sortAscending,
+                            onTaskUpdate: (task) {
+                              context.read<TasksListCubit>().updateTask(task);
+                            },
+                            onTaskDelete: (taskId) {
+                              context.read<TasksListCubit>().deleteTask(taskId);
+                            },
+                            onAddField: () {
+                              showDialog(
+                                context: context,
+                                builder: (context) => const CreateFieldDialog(),
+                              );
+                            },
+                            onSortChanged: (key) {
+                              context.read<TasksListCubit>().setSort(key);
+                            },
+                            onAddTask: (title) {
+                              context.read<TasksListCubit>().createTask(
+                                title: title,
+                                description: null,
+                                dueDate: null,
+                                fieldId: null,
+                              );
+                            },
+                            onFieldValueChange: (taskId, fieldId, value) {
+                              context.read<TasksListCubit>().updateTaskFieldValue(
+                                taskId: taskId,
+                                fieldId: fieldId,
+                                value: value,
+                              );
+                            },
+                            onReorder: (oldIndex, newIndex) {
+                              context
+                                  .read<TasksListCubit>()
+                                  .reorderTasks(oldIndex, newIndex);
+                            },
                           );
-                        },
-                        onSortChanged: (key) {
-                          context.read<TasksListCubit>().setSort(key);
-                        },
-                        onAddTask: (title) {
-                          context.read<TasksListCubit>().createTask(
-                            title: title,
-                            description: null,
-                            dueDate: null,
-                            fieldId: null,
+                        } else if (state.viewMode == TaskViewMode.calendar) {
+                          viewBody = CalendarView(
+                            key: const ValueKey('calendar_view'),
+                            tasks: state.sortedTasks,
+                            onTaskTap: (task) => _showTaskDetails(context, task),
                           );
-                        },
-                        onFieldValueChange: (taskId, fieldId, value) {
-                          context.read<TasksListCubit>().updateTaskFieldValue(
-                            taskId: taskId,
-                            fieldId: fieldId,
-                            value: value,
+                        } else {
+                          viewBody = RoadmapView(
+                            key: const ValueKey('roadmap_view'),
+                            tasks: state.sortedTasks,
+                            onAddTaskAtDate: (date) {
+                              _showCreateTaskDialog(
+                                context,
+                                initialDueDate: date,
+                              );
+                            },
+                            onTaskTap: (task) => _showTaskDetails(context, task),
                           );
-                        },
-                        onReorder: (oldIndex, newIndex) {
-                          context
-                              .read<TasksListCubit>()
-                              .reorderTasks(oldIndex, newIndex);
-                        },
-                      )
-                    else if (state.viewMode == TaskViewMode.calendar)
-                      CalendarView(
-                        tasks: state.sortedTasks,
-                        onTaskTap: (task) => _showTaskDetails(context, task),
-                      )
-                    else
-                      RoadmapView(
-                        tasks: state.sortedTasks,
-                        onAddTaskAtDate: (date) {
-                          _showCreateTaskDialog(
-                            context,
-                            initialDueDate: date,
-                          );
-                        },
-                        onTaskTap: (task) => _showTaskDetails(context, task),
-                      ),
+                        }
+
+                        return AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 200),
+                          switchInCurve: Curves.easeOutCubic,
+                          switchOutCurve: Curves.easeInCubic,
+                          transitionBuilder: (child, animation) {
+                            final fade = FadeTransition(
+                              opacity: animation,
+                              child: child,
+                            );
+                            final slide = Tween<Offset>(
+                              begin: const Offset(0, 0.02),
+                              end: Offset.zero,
+                            ).animate(animation);
+                            return SlideTransition(position: slide, child: fade);
+                          },
+                          child: viewBody,
+                        );
+                      },
+                    ),
                   ],
                 ),
               ),
@@ -215,17 +239,32 @@ class _TasksListPageState extends State<TasksListPage> {
   }
 
   void _showTaskDetails(BuildContext context, Task task) {
-    showDialog(
-      context: context,
-      builder: (context) => TaskDetailsDialog(
-        task: task,
-        onEdit: () {
-          // TODO: Implement edit task dialog
-        },
-        onDelete: () {
-          context.read<TasksListCubit>().deleteTask(task.id);
-        },
-      ),
+    final cubit = context.read<TasksListCubit>();
+    TaskDetailModal.show(
+      context,
+      task: task,
+      onAddComment: (text) async {
+        await cubit.addComment(taskId: task.id, text: text);
+        // Refresh the dialog with updated task
+        if (context.mounted) {
+          Navigator.pop(context);
+          _showTaskDetails(context, cubit.state.tasks.firstWhere(
+            (t) => t.id == task.id,
+            orElse: () => task,
+          ));
+        }
+      },
+      onDeleteComment: (commentId) async {
+        await cubit.deleteComment(taskId: task.id, commentId: commentId);
+        // Refresh the dialog with updated task
+        if (context.mounted) {
+          Navigator.pop(context);
+          _showTaskDetails(context, cubit.state.tasks.firstWhere(
+            (t) => t.id == task.id,
+            orElse: () => task,
+          ));
+        }
+      },
     );
   }
 }
