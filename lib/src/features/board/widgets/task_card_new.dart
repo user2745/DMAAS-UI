@@ -74,205 +74,253 @@ class _TaskCardState extends State<TaskCard> {
   }
 
   Widget _buildCardContent(BuildContext context, {bool isDragging = false}) {
-    final borderColor = widget.task.status.color.withAlpha(100);
+    final theme = Theme.of(context);
+    final statusColor = widget.task.status.color;
+    
     // Design Language: Elevation feedback (2px idle → 8px hover, 150ms)
     final elevation = (_isHovered || isDragging) ? 8.0 : 2.0;
-    final shadowBlur = (_isHovered || isDragging) ? 16.0 : 12.0;
+    final shadowBlur = (_isHovered || isDragging) ? 20.0 : 12.0;
+    final scale = (_isHovered && !isDragging) ? 1.02 : 1.0;
 
     // Design Language: Smooth elevation animation using AnimatedContainer
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 150),
-      width: isDragging ? 260 : null,
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Theme.of(context).cardColor,
-            Theme.of(context).cardColor.withAlpha(240),
+    return Transform.scale(
+      scale: scale,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        curve: Curves.easeOutCubic,
+        width: isDragging ? 260 : null,
+        margin: const EdgeInsets.only(bottom: 12),
+        decoration: BoxDecoration(
+          color: theme.cardColor,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: statusColor.withAlpha(_isHovered ? 180 : 80),
+            width: _isHovered ? 2 : 1.5,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: statusColor.withAlpha((_isHovered || isDragging) ? 50 : 20),
+              blurRadius: shadowBlur,
+              offset: Offset(0, elevation),
+              spreadRadius: (_isHovered || isDragging) ? 1 : 0,
+            ),
           ],
         ),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: borderColor, width: 1.5),
-        boxShadow: [
-          BoxShadow(
-            color: widget.task.status.color.withAlpha(30),
-            blurRadius: shadowBlur,
-            offset: Offset(0, elevation),
-          ),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(20),
-        child: Stack(
-          children: [
-            // Status indicator bar
-            Positioned(
-              left: 0,
-              top: 0,
-              bottom: 0,
-              child: Container(
-                width: 5,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      widget.task.status.color,
-                      widget.task.status.color.withAlpha(150),
-                    ],
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(16),
+          child: Stack(
+            children: [
+              // Top accent bar (gradient)
+              Positioned(
+                left: 0,
+                top: 0,
+                right: 0,
+                height: 3,
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.centerLeft,
+                      end: Alignment.centerRight,
+                      colors: [
+                        statusColor,
+                        statusColor.withAlpha(200),
+                      ],
+                    ),
                   ),
                 ),
               ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: widget.task.status.color.withAlpha(40),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: widget.task.status.color.withAlpha(100),
-                            width: 1,
+              // Main content
+              Padding(
+                padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Header row: Status badge & menu
+                    Row(
+                      children: [
+                        // Status badge with improved design
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 3,
                           ),
-                        ),
-                        child: Text(
-                          widget.task.status.label,
-                          style: TextStyle(
-                            color: widget.task.status.color,
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 0.5,
-                          ),
-                        ),
-                      ),
-                      const Spacer(),
-                      PopupMenuButton(
-                        icon: Icon(
-                          Icons.more_horiz,
-                          color: Theme.of(context).textTheme.bodySmall?.color,
-                          size: 20,
-                        ),
-                        itemBuilder: (context) => [
-                          PopupMenuItem(
-                            onTap: widget.onEdit,
-                            child: const Row(
-                              children: [
-                                Icon(Icons.edit, size: 18),
-                                SizedBox(width: 8),
-                                Text('Edit'),
-                              ],
+                          decoration: BoxDecoration(
+                            color: statusColor.withAlpha(30),
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(
+                              color: statusColor.withAlpha(100),
+                              width: 0.8,
                             ),
                           ),
-                          if (widget.onMoveLeft != null)
-                          PopupMenuItem(
-                            onTap: widget.onMoveLeft,
-                              child: const Row(
-                                children: [
-                                  Icon(Icons.arrow_back, size: 18),
-                                  SizedBox(width: 8),
-                                  Text('Move Left'),
-                                ],
-                              ),
-                            ),
-                          if (widget.onMoveRight != null)
-                          PopupMenuItem(
-                            onTap: widget.onMoveRight,
-                              child: const Row(
-                                children: [
-                                  Icon(Icons.arrow_forward, size: 18),
-                                  SizedBox(width: 8),
-                                  Text('Move Right'),
-                                ],
-                              ),
-                            ),
-                          PopupMenuItem(
-                            onTap: widget.onDelete,
-                            child: const Row(
-                              children: [
-                                Icon(Icons.delete, size: 18, color: Colors.red),
-                                SizedBox(width: 8),
-                                Text(
-                                  'Delete',
-                                  style: TextStyle(color: Colors.red),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                width: 6,
+                                height: 6,
+                                decoration: BoxDecoration(
+                                  color: statusColor,
+                                  shape: BoxShape.circle,
                                 ),
-                              ],
-                            ),
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                widget.task.status.label,
+                                style: theme.textTheme.labelSmall?.copyWith(
+                                  color: statusColor,
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 10,
+                                ),
+                              ),
+                            ],
                           ),
-                        ],
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    widget.task.title,
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 16,
-                      height: 1.3,
+                        ),
+                        const Spacer(),
+                        // Action menu
+                        _buildActionMenu(context),
+                      ],
                     ),
-                  ),
-                  if ((widget.task.description ?? '').isNotEmpty) ...[
-                      const SizedBox(height: 12),
-                      Text(
-                        widget.task.description ?? '',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Theme.of(context).textTheme.bodySmall?.color,
-                        fontSize: 13,
-                        height: 1.4,
+                    const SizedBox(height: 10),
+                    
+                    // Title with improved sizing
+                    Text(
+                      widget.task.title,
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 15,
+                        height: 1.3,
+                        letterSpacing: 0.3,
                       ),
-                      maxLines: 3,
+                      maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
-                  ],
-                  const SizedBox(height: 16),
-                  Wrap(
-                    spacing: 6,
-                    runSpacing: 6,
-                    children: [
-                      _buildPill(
-                        context,
-                        icon: Icons.schedule,
-                        label: _timeAgo(widget.task.createdAt),
-                        color: const Color(0xFF8B949E),
+                    
+                    // Description (if exists)
+                    if ((widget.task.description ?? '').isNotEmpty) ...[
+                      const SizedBox(height: 8),
+                      Text(
+                        widget.task.description ?? '',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.textTheme.bodySmall?.color?.withOpacity(0.7),
+                          fontSize: 12,
+                          height: 1.4,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      ..._buildFieldPills(context),
                     ],
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
+                    
+                    // Field values and metadata pills
+                    if (_buildFieldPills(context).isNotEmpty || true) ...[
+                      const SizedBox(height: 10),
+                      SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        physics: const NeverScrollableScrollPhysics(),
+                        child: Wrap(
+                          spacing: 5,
+                          runSpacing: 4,
+                          children: [
+                            // Created time pill
+                            _buildMetadataPill(
+                              context,
+                              icon: Icons.schedule,
+                              label: _timeAgo(widget.task.createdAt),
+                              backgroundColor: theme.colorScheme.secondaryContainer,
+                              textColor: theme.colorScheme.onSecondaryContainer,
+                            ),
+                            // Field pills
+                            ..._buildFieldPills(context),
+                          ],
+                        ),
+                      ),
+                    ],
+                    
+                    // Drag indicator at bottom
+                    const SizedBox(height: 8),
+                    Center(
+                      child: Icon(
                         Icons.drag_indicator,
-                        color: Theme.of(
-                          context,
-                        ).textTheme.bodySmall?.color?.withAlpha(100),
-                        size: 20,
+                        color: theme.colorScheme.outline.withOpacity(0.4),
+                        size: 18,
                       ),
-                    ],
-                  ),
-                ],
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
 
+  Widget _buildActionMenu(BuildContext context) {
+    final theme = Theme.of(context);
+    return PopupMenuButton<String>(
+      tooltip: 'Actions',
+      icon: Icon(
+        Icons.more_vert,
+        color: theme.colorScheme.onSurfaceVariant,
+        size: 18,
+      ),
+      itemBuilder: (context) => [
+        PopupMenuItem(
+          value: 'edit',
+          onTap: widget.onEdit,
+          child: Row(
+            children: [
+              Icon(Icons.edit_outlined, size: 18, color: theme.colorScheme.onSurface),
+              const SizedBox(width: 8),
+              Text('Edit', style: theme.textTheme.labelMedium),
+            ],
+          ),
+        ),
+        if (widget.onMoveLeft != null) ...[
+          PopupMenuDivider(),
+          PopupMenuItem(
+            value: 'moveLeft',
+            onTap: widget.onMoveLeft,
+            child: Row(
+              children: [
+                Icon(Icons.arrow_back, size: 18, color: theme.colorScheme.primary),
+                const SizedBox(width: 8),
+                Text('Move Left', style: theme.textTheme.labelMedium?.copyWith(color: theme.colorScheme.primary)),
+              ],
+            ),
+          ),
+        ],
+        if (widget.onMoveRight != null) ...[
+          PopupMenuDivider(),
+          PopupMenuItem(
+            value: 'moveRight',
+            onTap: widget.onMoveRight,
+            child: Row(
+              children: [
+                Icon(Icons.arrow_forward, size: 18, color: theme.colorScheme.primary),
+                const SizedBox(width: 8),
+                Text('Move Right', style: theme.textTheme.labelMedium?.copyWith(color: theme.colorScheme.primary)),
+              ],
+            ),
+          ),
+        ],
+        PopupMenuDivider(),
+        PopupMenuItem(
+          value: 'delete',
+          onTap: widget.onDelete,
+          child: Row(
+            children: [
+              Icon(Icons.delete_outline, size: 18, color: theme.colorScheme.error),
+              const SizedBox(width: 8),
+              Text('Delete', style: theme.textTheme.labelMedium?.copyWith(color: theme.colorScheme.error)),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
   List<Widget> _buildFieldPills(BuildContext context) {
-     if (widget.task.fieldValues == null || widget.task.fieldValues!.isEmpty) {
+    if (widget.task.fieldValues == null || widget.task.fieldValues!.isEmpty) {
       return [];
     }
 
@@ -293,11 +341,12 @@ class _TaskCardState extends State<TaskCard> {
         }
 
         pills.add(
-          _buildPill(
+          _buildFieldPill(
             context,
-            icon: _getFieldIcon(field.type),
-            label: '${field.name}: $displayValue',
-            color: field.color,
+            fieldName: field.name,
+            fieldValue: displayValue,
+            fieldType: field.type,
+            fieldColor: field.color,
           ),
         );
       }
@@ -316,30 +365,79 @@ class _TaskCardState extends State<TaskCard> {
     }
   }
 
-  Widget _buildPill(
+  Widget _buildFieldPill(
     BuildContext context, {
-    required IconData icon,
-    required String label,
-    required Color color,
+    required String fieldName,
+    required String fieldValue,
+    required FieldType fieldType,
+    required Color fieldColor,
   }) {
+    final theme = Theme.of(context);
+    final icon = _getFieldIcon(fieldType);
+    
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
       decoration: BoxDecoration(
-        color: color.withAlpha(25),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: color.withAlpha(60), width: 1),
+        color: fieldColor.withAlpha(20),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: fieldColor.withAlpha(80),
+          width: 0.8,
+        ),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 14, color: color),
-          const SizedBox(width: 4),
+          Icon(icon, size: 12, color: fieldColor),
+          const SizedBox(width: 3),
+          Tooltip(
+            message: '$fieldName: $fieldValue',
+            child: Text(
+              fieldValue,
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: fieldColor,
+                fontWeight: FontWeight.w500,
+                fontSize: 10,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMetadataPill(
+    BuildContext context, {
+    required IconData icon,
+    required String label,
+    required Color backgroundColor,
+    required Color textColor,
+  }) {
+    final theme = Theme.of(context);
+    
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: textColor.withAlpha(60),
+          width: 0.8,
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 12, color: textColor),
+          const SizedBox(width: 3),
           Text(
             label,
-            style: TextStyle(
-              color: color,
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: textColor,
+              fontWeight: FontWeight.w500,
+              fontSize: 10,
             ),
           ),
         ],
