@@ -216,6 +216,12 @@ class _TaskBoardPageState extends State<TaskBoardPage> with AutomaticKeepAliveCl
     Task? task,
     TaskStatus? initialStatus,
   }) {
-    TaskEditorSheet.show(context, task: task, initialStatus: initialStatus);
+    final state = context.read<TaskBoardCubit>().state;
+    TaskEditorSheet.show(
+      context,
+      task: task,
+      initialStatus: initialStatus,
+      fields: state.fields,
+    );
   }
 }
