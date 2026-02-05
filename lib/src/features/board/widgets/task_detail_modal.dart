@@ -58,6 +58,7 @@ class _TaskDetailModalState extends State<TaskDetailModal>
   final Set<String> _expandedChips = {};
   bool _isEditingTitle = false;
   bool _isEditingDescription = false;
+  bool _isEditingMode = false;
   bool _isTitleHovered = false;
   bool _isDescriptionHovered = false;
   bool _showUndoWhisper = false;
@@ -214,7 +215,7 @@ class _TaskDetailModalState extends State<TaskDetailModal>
                                       )
                                     : null,
                               ),
-                              child: _isEditingTitle
+                              child: _isEditingTitle || _isEditingMode
                                   ? TextField(
                                       controller: _titleController,
                                       autofocus: true,
@@ -246,7 +247,51 @@ class _TaskDetailModalState extends State<TaskDetailModal>
                         ),
                       ),
                       const SizedBox(width: 12),
-                      // Actions
+                      // Edit / Save button
+                      Container(
+                        height: 32,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: IconButton(
+                          icon: Icon(_isEditingMode ? Icons.check : Icons.edit_outlined),
+                          onPressed: () {
+                            if (_isEditingMode) {
+                              // Save changes
+                              final newTitle = _titleController.text.trim();
+                              final newDescription = _descriptionController.text.trim();
+                              
+                              if (newTitle.isEmpty) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('Title cannot be empty')),
+                                );
+                                return;
+                              }
+                              
+                              final updatedTask = widget.task.copyWith(
+                                title: newTitle,
+                                description: newDescription.isEmpty ? null : newDescription,
+                              );
+                              context.read<TaskBoardCubit>().updateTask(updatedTask);
+                              setState(() => _isEditingMode = false);
+                            } else {
+                              setState(() => _isEditingMode = true);
+                            }
+                          },
+                          tooltip: _isEditingMode ? 'Save' : 'Edit',
+                          iconSize: 18,
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                          constraints: const BoxConstraints(
+                            minWidth: 32,
+                            minHeight: 32,
+                          ),
+                          color: _isEditingMode 
+                            ? theme.colorScheme.primary
+                            : theme.colorScheme.onSurface.withOpacity(0.7),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      // Close button
                       Container(
                         height: 32,
                         decoration: BoxDecoration(
@@ -254,7 +299,33 @@ class _TaskDetailModalState extends State<TaskDetailModal>
                         ),
                         child: IconButton(
                           icon: const Icon(Icons.close),
-                          onPressed: () => Navigator.pop(context),
+                          onPressed: () {
+                            if (_isEditingMode) {
+                              // Ask to confirm cancel
+                              showDialog(
+                                context: context,
+                                builder: (dialogContext) => AlertDialog(
+                                  title: const Text('Discard changes?'),
+                                  content: const Text('You have unsaved changes. Are you sure you want to discard them?'),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () => Navigator.pop(dialogContext),
+                                      child: const Text('Keep editing'),
+                                    ),
+                                    FilledButton(
+                                      onPressed: () {
+                                        Navigator.pop(dialogContext);
+                                        Navigator.pop(context);
+                                      },
+                                      child: const Text('Discard'),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            } else {
+                              Navigator.pop(context);
+                            }
+                          },
                           tooltip: 'Close',
                           iconSize: 18,
                           padding: const EdgeInsets.symmetric(horizontal: 8),
@@ -409,7 +480,7 @@ class _TaskDetailModalState extends State<TaskDetailModal>
                                           width: double.infinity,
                                           padding: const EdgeInsets.all(12),
                                           decoration: BoxDecoration(
-                                            color: _isEditingDescription
+                                            color: _isEditingDescription || _isEditingMode
                                                 ? theme.colorScheme.surface
                                                 : _isDescriptionHovered
                                                 ? theme.colorScheme.onSurface
@@ -419,7 +490,7 @@ class _TaskDetailModalState extends State<TaskDetailModal>
                                               8,
                                             ),
                                             border: Border.all(
-                                              color: _isEditingDescription
+                                              color: _isEditingDescription || _isEditingMode
                                                   ? theme.colorScheme.primary
                                                         .withOpacity(0.3)
                                                   : _isDescriptionHovered
@@ -429,7 +500,7 @@ class _TaskDetailModalState extends State<TaskDetailModal>
                                                         .withOpacity(0.08),
                                             ),
                                           ),
-                                          child: _isEditingDescription
+                                          child: _isEditingDescription || _isEditingMode
                                               ? TextField(
                                                   controller:
                                                       _descriptionController,
