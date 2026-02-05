@@ -31,6 +31,7 @@ class _MainNavigationPageState extends State<MainNavigationPage>
     if (_tabController.index == 0) {
       // Weekly Activities tab - reload fields in case they were updated
       context.read<TaskBoardCubit>().loadFields();
+      context.read<TaskBoardCubit>().loadTasks();
     }
   }
 
