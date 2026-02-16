@@ -313,7 +313,23 @@ class TasksListCubit extends Cubit<TasksListState> {
       final serverFields = state.fields
           .map((f) => f.id == newField.id ? createdField : f)
           .toList();
-      emit(state.copyWith(fields: serverFields));
+      // Also remap field values from temp ID to server ID
+      final updatedValues = Map<String, Map<String, Object?>>.from(
+        state.taskFieldValuesByTaskId,
+      );
+      if (createdField.id != newField.id) {
+        for (final taskId in updatedValues.keys) {
+          final taskValues = Map<String, Object?>.from(updatedValues[taskId]!);
+          if (taskValues.containsKey(newField.id)) {
+            taskValues[createdField.id] = taskValues.remove(newField.id);
+            updatedValues[taskId] = taskValues;
+          }
+        }
+      }
+      emit(state.copyWith(
+        fields: serverFields,
+        taskFieldValuesByTaskId: updatedValues,
+      ));
     } catch (e) {
       // Roll back on failure
       final rolledBackFields = state.fields
