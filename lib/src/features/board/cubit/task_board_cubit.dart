@@ -14,6 +14,7 @@ class TaskBoardState extends Equatable {
     this.isLoading = false,
     this.error,
     this.isReorderInFlight = false,
+    this.collapsedStatuses = const {},
   });
 
   final List<Task> tasks;
@@ -21,6 +22,7 @@ class TaskBoardState extends Equatable {
   final bool isLoading;
   final String? error;
   final bool isReorderInFlight;
+  final Set<TaskStatus> collapsedStatuses;
 
   Map<TaskStatus, List<Task>> get groupedByStatus {
     final Map<TaskStatus, List<Task>> map = {
@@ -46,6 +48,7 @@ class TaskBoardState extends Equatable {
     bool? isLoading,
     String? error,
     bool? isReorderInFlight,
+    Set<TaskStatus>? collapsedStatuses,
   }) =>
       TaskBoardState(
         tasks: tasks ?? this.tasks,
@@ -53,10 +56,11 @@ class TaskBoardState extends Equatable {
         isLoading: isLoading ?? this.isLoading,
         error: error,
         isReorderInFlight: isReorderInFlight ?? this.isReorderInFlight,
+        collapsedStatuses: collapsedStatuses ?? this.collapsedStatuses,
       );
 
   @override
-  List<Object?> get props => [tasks, fields, isLoading, error, isReorderInFlight];
+  List<Object?> get props => [tasks, fields, isLoading, error, isReorderInFlight, collapsedStatuses];
 }
 
 class TaskBoardCubit extends Cubit<TaskBoardState> {
@@ -111,6 +115,20 @@ class TaskBoardCubit extends Cubit<TaskBoardState> {
         error: e.toString(),
       ));
     }
+  }
+
+  void toggleColumnCollapse(TaskStatus status) {
+    final updated = Set<TaskStatus>.from(state.collapsedStatuses);
+    if (updated.contains(status)) {
+      updated.remove(status);
+    } else {
+      updated.add(status);
+    }
+    emit(state.copyWith(collapsedStatuses: updated));
+  }
+
+  void setCollapsedStatuses(Set<TaskStatus> statuses) {
+    emit(state.copyWith(collapsedStatuses: statuses));
   }
 
   Future<void> addTask({
@@ -218,10 +236,11 @@ class TaskBoardCubit extends Cubit<TaskBoardState> {
   }) {
     final result = List<Task>.from(allTasks);
     
-    // Get all tasks in target status
+    // Get all tasks in target status, sorted by order so insert index is correct
     final tasksInTarget = result
         .where((t) => t.status == targetStatus)
-        .toList();
+        .toList()
+      ..sort((a, b) => a.order.compareTo(b.order));
     
     // Remove them from result
     result.removeWhere((t) => t.status == targetStatus);

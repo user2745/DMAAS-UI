@@ -158,44 +158,113 @@ class _TaskBoardPageState extends State<TaskBoardPage> with AutomaticKeepAliveCl
                 Expanded(
                   child: LayoutBuilder(
                     builder: (context, constraints) {
-                      final double columnWidth = math.max(
-                        constraints.maxWidth / TaskStatus.values.length,
-                        320,
-                      );
+                      final cubit = context.read<TaskBoardCubit>();
+                      final collapsed = state.collapsedStatuses;
+
+                      // Responsive: auto-collapse columns when viewport < 700
+                      final isNarrow = constraints.maxWidth < 700;
+                      Set<TaskStatus> effectiveCollapsed;
+                      if (isNarrow) {
+                        // On narrow viewports, collapse all but the first expanded
+                        final firstExpanded = TaskStatus.values.firstWhere(
+                          (s) => !collapsed.contains(s),
+                          orElse: () => TaskStatus.values.first,
+                        );
+                        effectiveCollapsed = TaskStatus.values
+                            .where((s) => s != firstExpanded)
+                            .toSet();
+                      } else {
+                        effectiveCollapsed = collapsed;
+                      }
+
+                      final expandedStatuses = TaskStatus.values
+                          .where((s) => !effectiveCollapsed.contains(s))
+                          .toList();
+                      final collapsedStatuses = TaskStatus.values
+                          .where((s) => effectiveCollapsed.contains(s))
+                          .toList();
+
+                      const collapsedTabWidth = 48.0;
+                      final collapsedTotalWidth = collapsedTabWidth + 8;
+                      final availableWidth =
+                          constraints.maxWidth - 32 - collapsedTotalWidth; // 32 = padding
+                      final double columnWidth = expandedStatuses.isNotEmpty
+                          ? math.max(availableWidth / expandedStatuses.length, 280)
+                          : 280;
 
                       return SingleChildScrollView(
                         scrollDirection: Axis.horizontal,
                         child: ConstrainedBox(
-                          constraints: BoxConstraints(minWidth: constraints.maxWidth),
+                          constraints: BoxConstraints(
+                            minWidth: constraints.maxWidth,
+                          ),
                           child: Padding(
                             padding: const EdgeInsets.all(16),
                             child: Row(
                               crossAxisAlignment: CrossAxisAlignment.start,
-                              children: TaskStatus.values
-                                  .map(
-                                    (status) => SizedBox(
-                                      width: columnWidth,
-                                      child: TaskColumn(
-                                        status: status,
-                                        tasks: filteredGrouped[status] ?? const [],
-                                        fields: state.fields,
-                                        isReorderInFlight: state.isReorderInFlight,
-                                        onAdd: () => _showTaskSheet(context, initialStatus: status),
-                                        onMove: (taskId, toStatus) =>
-                                            context.read<TaskBoardCubit>().moveTask(taskId, toStatus),
-                                        onReorder: (taskId, toStatus, toIndex) =>
-                                            context.read<TaskBoardCubit>().reorderTask(
-                                              taskId: taskId,
-                                              toStatus: toStatus,
-                                              toIndex: toIndex,
-                                            ),
-                                        onRemove: (taskId) =>
-                                            context.read<TaskBoardCubit>().removeTask(taskId),
-                                        onEdit: (task) => _showTaskSheet(context, task: task),
+                              children: [
+                                // Expanded columns
+                                ...expandedStatuses.map(
+                                  (status) => AnimatedContainer(
+                                    duration: const Duration(milliseconds: 300),
+                                    curve: Curves.easeInOut,
+                                    width: columnWidth,
+                                    child: TaskColumn(
+                                      status: status,
+                                      tasks: filteredGrouped[status] ?? const [],
+                                      fields: state.fields,
+                                      isReorderInFlight: state.isReorderInFlight,
+                                      onAdd: () => _showTaskSheet(
+                                        context,
+                                        initialStatus: status,
                                       ),
+                                      onMove: (taskId, toStatus) =>
+                                          cubit.moveTask(taskId, toStatus),
+                                      onReorder: (taskId, toStatus, toIndex) =>
+                                          cubit.reorderTask(
+                                            taskId: taskId,
+                                            toStatus: toStatus,
+                                            toIndex: toIndex,
+                                          ),
+                                      onRemove: (taskId) =>
+                                          cubit.removeTask(taskId),
+                                      onEdit: (task) =>
+                                          _showTaskSheet(context, task: task),
+                                      onCollapse: () =>
+                                          cubit.toggleColumnCollapse(status),
                                     ),
-                                  )
-                                  .toList(),
+                                  ),
+                                ),
+                                // Collapsed tab strip + add column button
+                                SizedBox(
+                                  width: collapsedTabWidth,
+                                  child: Column(
+                                    children: [
+                                      ...collapsedStatuses.map(
+                                        (status) => _CollapsedColumnTab(
+                                          status: status,
+                                          taskCount:
+                                              (filteredGrouped[status] ?? []).length,
+                                          onExpand: () =>
+                                              cubit.toggleColumnCollapse(status),
+                                          onTaskDropped: (task) =>
+                                              _moveToCollapsedColumn(
+                                            context,
+                                            task,
+                                            status,
+                                          ),
+                                          isReorderInFlight:
+                                              state.isReorderInFlight,
+                                        ),
+                                      ),
+                                      // Add column button
+                                      _AddColumnButton(
+                                        onTap: () => _showCreateColumnDialog(context),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ),
@@ -222,6 +291,199 @@ class _TaskBoardPageState extends State<TaskBoardPage> with AutomaticKeepAliveCl
       task: task,
       initialStatus: initialStatus,
       fields: state.fields,
+    );
+  }
+
+  /// Optimistically move a task to a collapsed column and show a snackbar
+  void _moveToCollapsedColumn(
+    BuildContext context,
+    Task task,
+    TaskStatus toStatus,
+  ) {
+    final cubit = context.read<TaskBoardCubit>();
+    cubit.moveTask(task.id, toStatus).then((_) {
+      if (!context.mounted) return;
+      final currentState = cubit.state;
+      if (currentState.error != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to move "${task.title}"'),
+            backgroundColor: Colors.red.shade700,
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    });
+
+    // Show optimistic snackbar immediately
+    ScaffoldMessenger.of(context).clearSnackBars();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Container(
+              width: 8,
+              height: 8,
+              decoration: BoxDecoration(
+                color: toStatus.color,
+                shape: BoxShape.circle,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                'Moved "${task.title}" to ${toStatus.label}',
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 2),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10),
+        ),
+      ),
+    );
+  }
+}
+
+/// A collapsed column tab shown as a vertical rotated strip on the right side.
+/// Acts as a DragTarget for silently moving tasks into the collapsed column.
+class _CollapsedColumnTab extends StatefulWidget {
+  const _CollapsedColumnTab({
+    required this.status,
+    required this.taskCount,
+    required this.onExpand,
+    required this.onTaskDropped,
+    this.isReorderInFlight = false,
+  });
+
+  final TaskStatus status;
+  final int taskCount;
+  final VoidCallback onExpand;
+  final void Function(Task task) onTaskDropped;
+  final bool isReorderInFlight;
+
+  @override
+  State<_CollapsedColumnTab> createState() => _CollapsedColumnTabState();
+}
+
+class _CollapsedColumnTabState extends State<_CollapsedColumnTab> {
+  bool _isDragHover = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return DragTarget<Task>(
+      onWillAcceptWithDetails: (details) {
+        // Accept tasks from other columns, not from this status
+        return details.data.status != widget.status &&
+            !widget.isReorderInFlight;
+      },
+      onAcceptWithDetails: (details) {
+        widget.onTaskDropped(details.data);
+        setState(() => _isDragHover = false);
+      },
+      onMove: (_) {
+        if (!_isDragHover) setState(() => _isDragHover = true);
+      },
+      onLeave: (_) {
+        if (_isDragHover) setState(() => _isDragHover = false);
+      },
+      builder: (context, candidateData, rejectedData) {
+        return GestureDetector(
+          onTap: widget.onExpand,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            width: 44,
+            margin: const EdgeInsets.only(bottom: 8),
+            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 6),
+            decoration: BoxDecoration(
+              color: _isDragHover
+                  ? widget.status.color.withAlpha(40)
+                  : Theme.of(context).cardColor.withAlpha(230),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: _isDragHover
+                    ? widget.status.color.withAlpha(180)
+                    : widget.status.color.withAlpha(60),
+                width: _isDragHover ? 2.5 : 1.5,
+              ),
+              boxShadow: _isDragHover
+                  ? [
+                      BoxShadow(
+                        color: widget.status.color.withAlpha(50),
+                        blurRadius: 12,
+                        spreadRadius: 1,
+                      ),
+                    ]
+                  : null,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Status dot
+                Container(
+                  width: 8,
+                  height: 8,
+                  decoration: BoxDecoration(
+                    color: widget.status.color,
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: widget.status.color.withAlpha(80),
+                        blurRadius: 4,
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 8),
+                // Task count badge
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 2,
+                  ),
+                  decoration: BoxDecoration(
+                    color: widget.status.color.withAlpha(25),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    '${widget.taskCount}',
+                    style: TextStyle(
+                      color: widget.status.color,
+                      fontWeight: FontWeight.w800,
+                      fontSize: 11,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                // Rotated label
+                RotatedBox(
+                  quarterTurns: 1,
+                  child: Text(
+                    widget.status.label,
+                    style: TextStyle(
+                      color: widget.status.color,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 12,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                // Expand icon
+                Icon(
+                  Icons.chevron_right,
+                  size: 16,
+                  color: widget.status.color.withAlpha(150),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }
