@@ -347,6 +347,25 @@ class _TaskBoardPageState extends State<TaskBoardPage> with AutomaticKeepAliveCl
       ),
     );
   }
+
+  void _showCreateColumnDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Add Column'),
+        content: const Text(
+          'Custom columns are coming soon! '
+          'Currently the board supports To Do, In Progress, and Done.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 /// A collapsed column tab shown as a vertical rotated strip on the right side.
@@ -484,6 +503,38 @@ class _CollapsedColumnTabState extends State<_CollapsedColumnTab> {
           ),
         );
       },
+    );
+  }
+}
+
+/// A small "+" button shown at the bottom of the collapsed column strip.
+class _AddColumnButton extends StatelessWidget {
+  const _AddColumnButton({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 44,
+        margin: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 6),
+        decoration: BoxDecoration(
+          color: Theme.of(context).cardColor.withAlpha(180),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: Theme.of(context).dividerColor.withAlpha(60),
+            width: 1.5,
+          ),
+        ),
+        child: Icon(
+          Icons.add_rounded,
+          size: 20,
+          color: Theme.of(context).colorScheme.onSurface.withAlpha(150),
+        ),
+      ),
     );
   }
 }
