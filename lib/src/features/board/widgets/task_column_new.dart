@@ -18,6 +18,7 @@ class TaskColumn extends StatefulWidget {
     required this.onEdit,
     this.fields = const [],
     this.isReorderInFlight = false,
+    this.onCollapse,
   });
 
   final TaskStatus status;
@@ -29,6 +30,7 @@ class TaskColumn extends StatefulWidget {
   final void Function(Task task) onEdit;
   final List<Field> fields;
   final bool isReorderInFlight;
+  final VoidCallback? onCollapse;
 
   @override
   State<TaskColumn> createState() => _TaskColumnState();
@@ -38,61 +40,35 @@ class _TaskColumnState extends State<TaskColumn> {
   bool _isDraggingOver = false;
   int? _dropIndex;
   String? _draggedTaskId;
-  final List<GlobalKey> _cardKeys = [];
+  final Map<String, GlobalKey> _cardKeys = {};
   final ScrollController _scrollController = ScrollController();
 
   @override
   void initState() {
     super.initState();
-    _updateCardKeys();
+  }
+
+  /// Get or create a GlobalKey for a task by its ID
+  GlobalKey _keyForTask(String taskId) {
+    return _cardKeys.putIfAbsent(taskId, () => GlobalKey());
+  }
+
+  /// Clean up keys for tasks that no longer exist
+  void _pruneStaleKeys() {
+    final currentIds = widget.tasks.map((t) => t.id).toSet();
+    _cardKeys.removeWhere((id, _) => !currentIds.contains(id));
   }
 
   @override
   void didUpdateWidget(TaskColumn oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.tasks.length != widget.tasks.length) {
-      _updateCardKeys();
-    }
-  }
-
-  void _updateCardKeys() {
-    _cardKeys.clear();
-    for (int i = 0; i < widget.tasks.length; i++) {
-      _cardKeys.add(GlobalKey());
-    }
+    _pruneStaleKeys();
   }
 
   @override
   void dispose() {
     _scrollController.dispose();
     super.dispose();
-  }
-
-  /// Returns the tasks list with live reordering during drag
-  List<Task> _getLiveReorderedTasks() {
-    if (_draggedTaskId == null || _dropIndex == null) {
-      return widget.tasks;
-    }
-    
-    // Find the dragged task
-    final draggedTask = widget.tasks.firstWhere(
-      (t) => t.id == _draggedTaskId,
-      orElse: () => widget.tasks.first,
-    );
-    
-    // If dragging from same column, create temporary reordered list
-    if (draggedTask.status == widget.status) {
-      final reordered = List<Task>.from(widget.tasks);
-      reordered.removeWhere((t) => t.id == _draggedTaskId);
-      
-      // Insert at drop index
-      final insertIndex = _dropIndex!.clamp(0, reordered.length);
-      reordered.insert(insertIndex, draggedTask);
-      
-      return reordered;
-    }
-    
-    return widget.tasks;
   }
 
   @override
@@ -201,103 +177,141 @@ class _TaskColumnState extends State<TaskColumn> {
     );
   }
 
-  /// Builds task card list with live reordering animation
+  /// Builds task card list with a placeholder indicator at the drop position
   List<Widget> _buildTaskCards() {
     final cards = <Widget>[];
-    
-    // Use live reordered list during drag
-    final displayTasks = _getLiveReorderedTasks();
-    
-    for (int i = 0; i < displayTasks.length; i++) {
-      final task = displayTasks[i];
-      
-      // Determine if this is the dragged card
-      final isDraggedCard = task.id == _draggedTaskId && 
-                           task.status == widget.status;
-      
-      cards.add(
-        AnimatedSwitcher(
-          duration: const Duration(milliseconds: 200),
-          switchInCurve: Curves.easeOut,
-          switchOutCurve: Curves.easeIn,
-          transitionBuilder: (child, animation) {
-            return SlideTransition(
-              position: Tween<Offset>(
-                begin: const Offset(0, -0.3),
-                end: Offset.zero,
-              ).animate(animation),
-              child: FadeTransition(
-                opacity: animation,
-                child: child,
+    final tasks = widget.tasks;
+    final isDraggingInThisColumn = _draggedTaskId != null &&
+        tasks.any((t) => t.id == _draggedTaskId);
+
+    // _dropIndex is the insertion position among VISIBLE (non-dragged) cards.
+    // We need to map that back to a slot in the original list.
+    //
+    // Walk through the original list. For each non-dragged card, track its
+    // "visible index" (position among visible cards). Insert the placeholder
+    // when visibleIndex reaches _dropIndex.
+
+    int visibleIndex = 0;
+    bool placeholderInserted = false;
+
+    void maybeInsertPlaceholder() {
+      if (!placeholderInserted &&
+          _dropIndex != null &&
+          visibleIndex == _dropIndex) {
+        placeholderInserted = true;
+        cards.add(
+          AnimatedContainer(
+            key: const ValueKey('__drop_placeholder__'),
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeOut,
+            height: 60,
+            margin: const EdgeInsets.symmetric(vertical: 4),
+            decoration: BoxDecoration(
+              color: widget.status.color.withAlpha(20),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: widget.status.color.withAlpha(100),
+                width: 2,
+                strokeAlign: BorderSide.strokeAlignInside,
               ),
-            );
-          },
-          child: KeyedSubtree(
-            key: _cardKeys.length > i ? _cardKeys[i] : null,
-            child: Opacity(
-              key: ValueKey('${task.id}_$i'),
-              opacity: isDraggedCard ? 0.3 : 1.0,
-              child: TaskCard(
-                task: task,
-                fields: widget.fields,
-                onMoveLeft: task.status.previous == null
-                    ? null
-                    : () => widget.onMove(
-                          task.id,
-                          task.status.previous!,
-                        ),
-                onMoveRight: task.status.next == null
-                    ? null
-                    : () => widget.onMove(
-                          task.id,
-                          task.status.next!,
-                        ),
-                onDelete: () => widget.onRemove(task.id),
-                onEdit: () => widget.onEdit(task),
+            ),
+            child: Center(
+              child: Icon(
+                Icons.drag_handle,
+                color: widget.status.color.withAlpha(120),
+                size: 20,
               ),
             ),
           ),
+        );
+      }
+    }
+
+    for (int i = 0; i < tasks.length; i++) {
+      final task = tasks[i];
+      final isDraggedCard =
+          isDraggingInThisColumn && task.id == _draggedTaskId;
+
+      if (isDraggedCard) {
+        // Dragged card: collapse to 0 height so it disappears in-place
+        cards.add(
+          AnimatedContainer(
+            key: _keyForTask(task.id),
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeOut,
+            height: 0,
+            clipBehavior: Clip.hardEdge,
+            decoration: const BoxDecoration(),
+            child: TaskCard(
+              task: task,
+              fields: widget.fields,
+              onMoveLeft: null,
+              onMoveRight: null,
+              onDelete: () => widget.onRemove(task.id),
+              onEdit: () => widget.onEdit(task),
+            ),
+          ),
+        );
+        // Don't increment visibleIndex — this card is hidden
+        continue;
+      }
+
+      // Before this visible card, maybe insert placeholder
+      maybeInsertPlaceholder();
+
+      // Normal visible card
+      cards.add(
+        KeyedSubtree(
+          key: _keyForTask(task.id),
+          child: TaskCard(
+            task: task,
+            fields: widget.fields,
+            onMoveLeft: task.status.previous == null
+                ? null
+                : () => widget.onMove(task.id, task.status.previous!),
+            onMoveRight: task.status.next == null
+                ? null
+                : () => widget.onMove(task.id, task.status.next!),
+            onDelete: () => widget.onRemove(task.id),
+            onEdit: () => widget.onEdit(task),
+          ),
         ),
       );
+
+      visibleIndex++;
     }
-    
+
+    // Placeholder at the end (after all visible cards)
+    maybeInsertPlaceholder();
+
     return cards;
   }
 
-  /// Calculates the drop index based on drag offset using actual card positions
+  /// Calculates the drop index among VISIBLE (non-dragged) cards.
+  ///
+  /// Skips the dragged card's collapsed rect entirely so it doesn't
+  /// corrupt position calculations.
   int _calculateDropIndex(Offset dragOffset) {
-    if (widget.tasks.isEmpty) return 0;
-    
-    // Get actual card positions from the live reordered list
-    final displayTasks = _getLiveReorderedTasks();
-    final cardPositions = <Rect>[];
-    
-    for (final key in _cardKeys) {
+    // Collect rects of only the VISIBLE cards (skip the dragged one)
+    final visibleRects = <Rect>[];
+    for (final task in widget.tasks) {
+      if (task.id == _draggedTaskId && task.status == widget.status) {
+        continue; // skip collapsed card
+      }
+      final key = _cardKeys[task.id];
+      if (key == null) continue;
       final renderBox = key.currentContext?.findRenderObject() as RenderBox?;
-      if (renderBox != null && renderBox.hasSize) {
-        final position = renderBox.localToGlobal(Offset.zero);
-        cardPositions.add(position & renderBox.size);
+      if (renderBox != null && renderBox.hasSize && renderBox.size.height > 1) {
+        final pos = renderBox.localToGlobal(Offset.zero);
+        visibleRects.add(pos & renderBox.size);
       }
     }
-    
-    if (cardPositions.isEmpty) {
-      // Fallback: use drag Y relative to column
-      final columnBox = context.findRenderObject() as RenderBox?;
-      if (columnBox != null) {
-        final localOffset = columnBox.globalToLocal(dragOffset);
-        final relativePosition = localOffset.dy / columnBox.size.height;
-        return (relativePosition * displayTasks.length).round().clamp(0, displayTasks.length);
-      }
-      return displayTasks.length;
-    }
-    
-    // Use DropPositionCalculator with actual positions
-    final scrollOffset = _scrollController.hasClients ? _scrollController.offset : 0.0;
-    
-    return DropPositionCalculator.calculateClosestCardIndex(
-      dragOffset: dragOffset,
-      cardGlobalPositions: cardPositions,
-      columnScrollOffset: scrollOffset,
+
+    if (visibleRects.isEmpty) return 0;
+
+    return DropPositionCalculator.calculate(
+      dragY: dragOffset.dy,
+      visibleCardRects: visibleRects,
     );
   }
 
@@ -356,6 +370,17 @@ class _TaskColumnState extends State<TaskColumn> {
           icon: Icon(Icons.add_circle, color: widget.status.color),
           iconSize: 24,
         ),
+        if (widget.onCollapse != null)
+          IconButton(
+            tooltip: 'Collapse column',
+            onPressed: widget.onCollapse,
+            icon: Icon(
+              Icons.chevron_left,
+              color: widget.status.color.withAlpha(180),
+            ),
+            iconSize: 20,
+            visualDensity: VisualDensity.compact,
+          ),
       ],
     );
   }
