@@ -211,27 +211,32 @@ class _TaskCardState extends State<TaskCard> {
                     ],
                     
                     // Field values and metadata pills
-                    if (_buildFieldPills(context).isNotEmpty || true) ...[
+                    if (_buildFieldPills(context).isNotEmpty) ...[
                       const SizedBox(height: 10),
-                      SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        physics: const NeverScrollableScrollPhysics(),
-                        child: Wrap(
-                          spacing: 5,
-                          runSpacing: 4,
-                          children: [
-                            // Created time pill
-                            _buildMetadataPill(
-                              context,
-                              icon: Icons.schedule,
-                              label: _timeAgo(widget.task.createdAt),
-                              backgroundColor: theme.colorScheme.secondaryContainer,
-                              textColor: theme.colorScheme.onSecondaryContainer,
-                            ),
-                            // Field pills
-                            ..._buildFieldPills(context),
-                          ],
-                        ),
+                      Wrap(
+                        spacing: 5,
+                        runSpacing: 4,
+                        children: [
+                          // Created time pill
+                          _buildMetadataPill(
+                            context,
+                            icon: Icons.schedule,
+                            label: _timeAgo(widget.task.createdAt),
+                            backgroundColor: theme.colorScheme.secondaryContainer,
+                            textColor: theme.colorScheme.onSecondaryContainer,
+                          ),
+                          // Field pills
+                          ..._buildFieldPills(context),
+                        ],
+                      ),
+                    ] else ...[
+                      const SizedBox(height: 10),
+                      _buildMetadataPill(
+                        context,
+                        icon: Icons.schedule,
+                        label: _timeAgo(widget.task.createdAt),
+                        backgroundColor: theme.colorScheme.secondaryContainer,
+                        textColor: theme.colorScheme.onSecondaryContainer,
                       ),
                     ],
                     
@@ -375,35 +380,40 @@ class _TaskCardState extends State<TaskCard> {
     final theme = Theme.of(context);
     final icon = _getFieldIcon(fieldType);
     
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-      decoration: BoxDecoration(
-        color: fieldColor.withAlpha(20),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: fieldColor.withAlpha(80),
-          width: 0.8,
-        ),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 12, color: fieldColor),
-          const SizedBox(width: 3),
-          Tooltip(
-            message: '$fieldName: $fieldValue',
-            child: Text(
-              fieldValue,
-              style: theme.textTheme.labelSmall?.copyWith(
-                color: fieldColor,
-                fontWeight: FontWeight.w500,
-                fontSize: 10,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 120),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+        decoration: BoxDecoration(
+          color: fieldColor.withAlpha(20),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: fieldColor.withAlpha(80),
+            width: 0.8,
           ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 12, color: fieldColor),
+            const SizedBox(width: 3),
+            Flexible(
+              child: Tooltip(
+                message: '$fieldName: $fieldValue',
+                child: Text(
+                  fieldValue,
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: fieldColor,
+                    fontWeight: FontWeight.w500,
+                    fontSize: 10,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ),
         ],
+      ),
       ),
     );
   }
