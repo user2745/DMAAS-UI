@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../tasks_list/models/field.dart';
 import '../cubit/task_board_cubit.dart';
 import '../models/task.dart';
+import '../../purchase/cubit/purchase_cubit.dart';
 import '../../../widgets/animated_focus_text_field.dart';
 
 class TaskEditorSheet extends StatefulWidget {
@@ -626,6 +627,7 @@ class _TaskEditorSheetState extends State<TaskEditorSheet> {
         dueDate: _dueDate,
         fieldValues: fieldValues,
       );
+      context.read<PurchaseCubit>().onTaskCreated();
     } else {
       final task = widget.task!.copyWith(
         title: trimmedTitle,
