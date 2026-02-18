@@ -199,7 +199,7 @@ class _TaskBoardPageState extends State<TaskBoardPage> with AutomaticKeepAliveCl
                             minWidth: constraints.maxWidth,
                           ),
                           child: Padding(
-                            padding: const EdgeInsets.all(16),
+                            padding: const EdgeInsets.all(20),
                             child: Row(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [

@@ -78,70 +78,105 @@ class _SearchBarWidgetState extends State<SearchBarWidget> {
       mainAxisSize: MainAxisSize.min,
       children: [
         // Search bar row
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Theme.of(context).cardColor,
-            border: Border(
-              bottom: BorderSide(
-                color: Theme.of(context).dividerColor.withAlpha(50),
-              ),
-            ),
-          ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(12, 10, 12, 8),
           child: Row(
             children: [
               Expanded(
-                child: TextField(
-                  controller: _controller,
-                  onChanged: widget.onChanged,
-                  decoration: InputDecoration(
-                    hintText: 'Search tasks by title, description...',
-                    prefixIcon: const Icon(Icons.search),
-                    suffixIcon: _controller.text.isNotEmpty
-                        ? IconButton(
-                            icon: const Icon(Icons.clear),
-                            onPressed: () {
-                              _controller.clear();
-                              widget.onClear();
-                              setState(() {});
-                            },
-                          )
-                        : null,
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 12,
+                child: Container(
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF21262D),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: const Color(0xFF30363D), width: 1),
+                  ),
+                  child: TextField(
+                    controller: _controller,
+                    onChanged: widget.onChanged,
+                    style: const TextStyle(
+                      color: Color(0xFFE6EDF3),
+                      fontSize: 14,
+                    ),
+                    decoration: InputDecoration(
+                      hintText: 'Search tasks…',
+                      hintStyle: const TextStyle(
+                        color: Color(0xFF8B949E),
+                        fontSize: 14,
+                      ),
+                      prefixIcon: const Icon(
+                        Icons.search,
+                        size: 18,
+                        color: Color(0xFF8B949E),
+                      ),
+                      suffixIcon: _controller.text.isNotEmpty
+                          ? IconButton(
+                              icon: const Icon(Icons.clear, size: 16),
+                              color: const Color(0xFF8B949E),
+                              onPressed: () {
+                                _controller.clear();
+                                widget.onClear();
+                                setState(() {});
+                              },
+                            )
+                          : null,
+                      border: InputBorder.none,
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 11,
+                      ),
+                      isDense: true,
                     ),
                   ),
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 8),
               // Filter button with badge
               Stack(
                 children: [
-                  IconButton(
-                    icon: const Icon(Icons.filter_list),
-                    onPressed: _toggleFilterPanel,
-                    tooltip: 'Add field filters',
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: _selectedFieldFilters.isNotEmpty
+                          ? const Color(0xFFBB86FC).withAlpha(25)
+                          : const Color(0xFF21262D),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                        color: _selectedFieldFilters.isNotEmpty
+                            ? const Color(0xFFBB86FC).withAlpha(80)
+                            : const Color(0xFF30363D),
+                        width: 1,
+                      ),
+                    ),
+                    child: IconButton(
+                      padding: EdgeInsets.zero,
+                      icon: Icon(
+                        Icons.filter_list,
+                        size: 18,
+                        color: _selectedFieldFilters.isNotEmpty
+                            ? const Color(0xFFBB86FC)
+                            : const Color(0xFF8B949E),
+                      ),
+                      onPressed: _toggleFilterPanel,
+                      tooltip: 'Add field filters',
+                    ),
                   ),
                   if (_selectedFieldFilters.isNotEmpty)
                     Positioned(
-                      right: 8,
-                      top: 8,
+                      right: 5,
+                      top: 5,
                       child: Container(
-                        padding: const EdgeInsets.all(2),
-                        decoration: BoxDecoration(
-                          color: Colors.red,
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        constraints: const BoxConstraints(
-                          minWidth: 20,
-                          minHeight: 20,
+                        width: 14,
+                        height: 14,
+                        decoration: const BoxDecoration(
+                          color: Color(0xFFBB86FC),
+                          shape: BoxShape.circle,
                         ),
                         child: Text(
                           '${_selectedFieldFilters.length}',
                           style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 12,
+                            color: Colors.black,
+                            fontSize: 9,
                             fontWeight: FontWeight.bold,
                           ),
                           textAlign: TextAlign.center,
@@ -150,11 +185,37 @@ class _SearchBarWidgetState extends State<SearchBarWidget> {
                     ),
                 ],
               ),
-              const SizedBox(width: 12),
-              FloatingActionButton.extended(
-                onPressed: widget.onNewTask,
-                icon: const Icon(Icons.add),
-                label: const Text('New Task'),
+              const SizedBox(width: 8),
+              // New Task pill button
+              GestureDetector(
+                onTap: widget.onNewTask,
+                child: Container(
+                  height: 40,
+                  padding: const EdgeInsets.symmetric(horizontal: 14),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFBB86FC).withAlpha(30),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: const Color(0xFFBB86FC).withAlpha(100),
+                      width: 1,
+                    ),
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.add, size: 16, color: Color(0xFFBB86FC)),
+                      SizedBox(width: 5),
+                      Text(
+                        'New Task',
+                        style: TextStyle(
+                          color: Color(0xFFBB86FC),
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ],
           ),
@@ -162,13 +223,12 @@ class _SearchBarWidgetState extends State<SearchBarWidget> {
         // Filter panel (when expanded)
         if (_showFilterPanel && widget.availableFilters.isNotEmpty)
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            decoration: BoxDecoration(
-              color: Theme.of(context).cardColor.withAlpha(200),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            decoration: const BoxDecoration(
+              color: Color(0xFF1C2128),
               border: Border(
-                bottom: BorderSide(
-                  color: Theme.of(context).dividerColor.withAlpha(50),
-                ),
+                top: BorderSide(color: Color(0xFF30363D), width: 1),
+                bottom: BorderSide(color: Color(0xFF30363D), width: 1),
               ),
             ),
             child: Column(
@@ -180,7 +240,10 @@ class _SearchBarWidgetState extends State<SearchBarWidget> {
                   children: [
                     Text(
                       'Filter by Field',
-                      style: Theme.of(context).textTheme.titleSmall,
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                        color: const Color(0xFFE6EDF3),
+                        fontSize: 13,
+                      ),
                     ),
                     if (_selectedFieldFilters.isNotEmpty)
                       TextButton(
