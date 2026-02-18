@@ -10,7 +10,7 @@ class TaskApiService {
   final Future<String?> Function()? tokenProvider;
 
   TaskApiService({
-    this.baseUrl = const String.fromEnvironment('API_BASE_URL', defaultValue: 'https://dmaas.athletex.io'),
+    this.baseUrl = const String.fromEnvironment('API_BASE_URL', defaultValue: 'http://74.208.213.94:3302'),
     http.Client? httpClient,
     this.tokenProvider,
   }) : httpClient = httpClient ?? http.Client();
