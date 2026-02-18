@@ -6,6 +6,7 @@ import '../models/task.dart';
 import 'task_detail_modal.dart';
 import '../../../widgets/micro_interactions/status_momentum.dart';
 import '../../../widgets/micro_interactions/fade_delete_card.dart';
+import '../../boost/view/boost_sheet.dart';
 
 class TaskCard extends StatefulWidget {
   const TaskCard({
@@ -76,181 +77,110 @@ class _TaskCardState extends State<TaskCard> {
   Widget _buildCardContent(BuildContext context, {bool isDragging = false}) {
     final theme = Theme.of(context);
     final statusColor = widget.task.status.color;
-    
-    // Design Language: Elevation feedback (2px idle → 8px hover, 150ms)
-    final elevation = (_isHovered || isDragging) ? 8.0 : 2.0;
-    final shadowBlur = (_isHovered || isDragging) ? 20.0 : 12.0;
-    final scale = (_isHovered && !isDragging) ? 1.02 : 1.0;
+    final scale = (_isHovered && !isDragging) ? 1.015 : 1.0;
 
-    // Design Language: Smooth elevation animation using AnimatedContainer
+    // Flutter constraint: borderRadius requires uniform border colors.
+    // Solution: uniform Border.all for the container, then a Positioned
+    // left strip for the status accent, all clipped with ClipRRect.
     return Transform.scale(
       scale: scale,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 150),
         curve: Curves.easeOutCubic,
-        width: isDragging ? 260 : null,
-        margin: const EdgeInsets.only(bottom: 12),
+        width: isDragging ? 270 : null,
+        margin: const EdgeInsets.only(bottom: 10),
         decoration: BoxDecoration(
-          color: theme.cardColor,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: statusColor.withAlpha(_isHovered ? 180 : 80),
-            width: _isHovered ? 2 : 1.5,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: statusColor.withAlpha((_isHovered || isDragging) ? 50 : 20),
-              blurRadius: shadowBlur,
-              offset: Offset(0, elevation),
-              spreadRadius: (_isHovered || isDragging) ? 1 : 0,
-            ),
-          ],
+          borderRadius: BorderRadius.circular(14),
+          boxShadow: (_isHovered || isDragging)
+              ? [
+                  BoxShadow(
+                    color: statusColor.withAlpha(30),
+                    blurRadius: 16,
+                    offset: const Offset(0, 4),
+                  ),
+                ]
+              : null,
         ),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(14),
           child: Stack(
             children: [
-              // Top accent bar (gradient)
-              Positioned(
-                left: 0,
-                top: 0,
-                right: 0,
-                height: 3,
-                child: Container(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.centerLeft,
-                      end: Alignment.centerRight,
-                      colors: [
-                        statusColor,
-                        statusColor.withAlpha(200),
+              // Card body: uniform border so borderRadius works
+              Container(
+                decoration: BoxDecoration(
+                  color: const Color(0xFF161B22),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: const Color(0xFF30363D), width: 1),
+                ),
+                // left: 17 = 3px accent + 14px inner gap; right: 6 for menu
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(17, 13, 6, 12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Title + menu
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: Text(
+                              widget.task.title,
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 14,
+                                height: 1.35,
+                                color: const Color(0xFFE6EDF3),
+                              ),
+                              maxLines: 3,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          _buildActionMenu(context),
+                        ],
+                      ),
+                      // Description
+                      if ((widget.task.description ?? '').isNotEmpty) ...[
+                        const SizedBox(height: 6),
+                        Text(
+                          widget.task.description!,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: const Color(0xFF8B949E),
+                            fontSize: 12,
+                            height: 1.4,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ],
-                    ),
+                      const SizedBox(height: 10),
+                      // Footer: time pill + field pills + drag dots
+                      Row(
+                        children: [
+                          _buildTimePill(context),
+                          ..._buildFieldPills(context).take(2).map(
+                                (p) => Padding(
+                                  padding: const EdgeInsets.only(left: 6),
+                                  child: p,
+                                ),
+                              ),
+                          const Spacer(),
+                          const Icon(
+                            Icons.drag_indicator,
+                            size: 16,
+                            color: Color(0xFF30363D),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
                 ),
               ),
-              // Main content
-              Padding(
-                padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Header row: Status badge & menu
-                    Row(
-                      children: [
-                        // Status badge with improved design
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 3,
-                          ),
-                          decoration: BoxDecoration(
-                            color: statusColor.withAlpha(30),
-                            borderRadius: BorderRadius.circular(6),
-                            border: Border.all(
-                              color: statusColor.withAlpha(100),
-                              width: 0.8,
-                            ),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Container(
-                                width: 6,
-                                height: 6,
-                                decoration: BoxDecoration(
-                                  color: statusColor,
-                                  shape: BoxShape.circle,
-                                ),
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                widget.task.status.label,
-                                style: theme.textTheme.labelSmall?.copyWith(
-                                  color: statusColor,
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 10,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const Spacer(),
-                        // Action menu
-                        _buildActionMenu(context),
-                      ],
-                    ),
-                    const SizedBox(height: 10),
-                    
-                    // Title with improved sizing
-                    Text(
-                      widget.task.title,
-                      style: theme.textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 15,
-                        height: 1.3,
-                        letterSpacing: 0.3,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    
-                    // Description (if exists)
-                    if ((widget.task.description ?? '').isNotEmpty) ...[
-                      const SizedBox(height: 8),
-                      Text(
-                        widget.task.description ?? '',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.textTheme.bodySmall?.color?.withOpacity(0.7),
-                          fontSize: 12,
-                          height: 1.4,
-                        ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                    
-                    // Field values and metadata pills
-                    if (_buildFieldPills(context).isNotEmpty) ...[
-                      const SizedBox(height: 10),
-                      Wrap(
-                        spacing: 5,
-                        runSpacing: 4,
-                        children: [
-                          // Created time pill
-                          _buildMetadataPill(
-                            context,
-                            icon: Icons.schedule,
-                            label: _timeAgo(widget.task.createdAt),
-                            backgroundColor: theme.colorScheme.secondaryContainer,
-                            textColor: theme.colorScheme.onSecondaryContainer,
-                          ),
-                          // Field pills
-                          ..._buildFieldPills(context),
-                        ],
-                      ),
-                    ] else ...[
-                      const SizedBox(height: 10),
-                      _buildMetadataPill(
-                        context,
-                        icon: Icons.schedule,
-                        label: _timeAgo(widget.task.createdAt),
-                        backgroundColor: theme.colorScheme.secondaryContainer,
-                        textColor: theme.colorScheme.onSecondaryContainer,
-                      ),
-                    ],
-                    
-                    // Drag indicator at bottom
-                    const SizedBox(height: 8),
-                    Center(
-                      child: Icon(
-                        Icons.drag_indicator,
-                        color: theme.colorScheme.outline.withOpacity(0.4),
-                        size: 18,
-                      ),
-                    ),
-                  ],
-                ),
+              // Left accent strip (status color)
+              Positioned(
+                left: 0,
+                top: 0,
+                bottom: 0,
+                child: Container(width: 3, color: statusColor),
               ),
             ],
           ),
@@ -310,6 +240,23 @@ class _TaskCardState extends State<TaskCard> {
         ],
         PopupMenuDivider(),
         PopupMenuItem(
+          value: 'boost',
+          onTap: () => BoostSheet.show(
+            context,
+            taskId: widget.task.id,
+            taskTitle: widget.task.title,
+            taskDescription: widget.task.description,
+          ),
+          child: Row(
+            children: [
+              const Text('⚡', style: TextStyle(fontSize: 16)),
+              const SizedBox(width: 8),
+              Text('Boost this task', style: theme.textTheme.labelMedium?.copyWith(color: const Color(0xFFBB86FC))),
+            ],
+          ),
+        ),
+        PopupMenuDivider(),
+        PopupMenuItem(
           value: 'delete',
           onTap: widget.onDelete,
           child: Row(
@@ -321,6 +268,31 @@ class _TaskCardState extends State<TaskCard> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildTimePill(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+      decoration: BoxDecoration(
+        color: const Color(0xFF21262D),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.schedule, size: 11, color: Color(0xFF8B949E)),
+          const SizedBox(width: 3),
+          Text(
+            _timeAgo(widget.task.createdAt),
+            style: const TextStyle(
+              fontSize: 11,
+              color: Color(0xFF8B949E),
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -377,83 +349,41 @@ class _TaskCardState extends State<TaskCard> {
     required FieldType fieldType,
     required Color fieldColor,
   }) {
-    final theme = Theme.of(context);
-    final icon = _getFieldIcon(fieldType);
-    
     return ConstrainedBox(
-      constraints: const BoxConstraints(maxWidth: 120),
+      constraints: const BoxConstraints(maxWidth: 90),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
         decoration: BoxDecoration(
-          color: fieldColor.withAlpha(20),
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(
-            color: fieldColor.withAlpha(80),
-            width: 0.8,
-          ),
+          color: fieldColor.withAlpha(18),
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(color: fieldColor.withAlpha(60), width: 0.8),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 12, color: fieldColor),
+            Icon(_getFieldIcon(fieldType), size: 11, color: fieldColor),
             const SizedBox(width: 3),
             Flexible(
               child: Tooltip(
                 message: '$fieldName: $fieldValue',
                 child: Text(
                   fieldValue,
-                  style: theme.textTheme.labelSmall?.copyWith(
+                  style: TextStyle(
                     color: fieldColor,
                     fontWeight: FontWeight.w500,
-                    fontSize: 10,
+                    fontSize: 11,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
             ),
-        ],
-      ),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildMetadataPill(
-    BuildContext context, {
-    required IconData icon,
-    required String label,
-    required Color backgroundColor,
-    required Color textColor,
-  }) {
-    final theme = Theme.of(context);
-    
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-      decoration: BoxDecoration(
-        color: backgroundColor,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: textColor.withAlpha(60),
-          width: 0.8,
-        ),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 12, color: textColor),
-          const SizedBox(width: 3),
-          Text(
-            label,
-            style: theme.textTheme.labelSmall?.copyWith(
-              color: textColor,
-              fontWeight: FontWeight.w500,
-              fontSize: 10,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 }
 
 String _timeAgo(DateTime timestamp) {
