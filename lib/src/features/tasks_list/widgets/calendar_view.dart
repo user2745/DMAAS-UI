@@ -55,9 +55,9 @@ class _CalendarViewState extends State<CalendarView> {
           physics: const NeverScrollableScrollPhysics(),
           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 7,
-            mainAxisSpacing: 8,
-            crossAxisSpacing: 8,
-            childAspectRatio: 1.2,
+            mainAxisSpacing: 6,
+            crossAxisSpacing: 6,
+            childAspectRatio: 0.85,
           ),
           itemCount: totalCells,
           itemBuilder: (context, index) {
@@ -146,93 +146,177 @@ class _CalendarViewState extends State<CalendarView> {
     required List<Task> tasks,
   }) {
     final theme = Theme.of(context);
-    final maxVisible = 3;
-    final visibleTasks = tasks.take(maxVisible).toList();
-    final remaining = tasks.length - visibleTasks.length;
-
-    return Container(
-      padding: const EdgeInsets.all(8),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        border: Border.all(
-          color: theme.colorScheme.onSurface.withOpacity(0.12),
-        ),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            AppDateUtils.formatDayNumber(date),
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: inMonth
-                  ? theme.colorScheme.onSurface
-                  : theme.colorScheme.onSurface.withOpacity(0.4),
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 6),
-          ...visibleTasks.map((task) => _buildTaskChip(theme, task)),
-          if (remaining > 0)
-            Padding(
-              padding: const EdgeInsets.only(top: 4),
-              child: Text(
-                '$remaining more',
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.primary,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTaskChip(ThemeData theme, Task task) {
-    final dueDate = task.dueDate;
-    final timeLabel = (dueDate != null && AppDateUtils.hasTimeComponent(dueDate))
-        ? AppDateUtils.formatTime(dueDate)
-        : null;
+    final isToday = AppDateUtils.normalizeDate(date) ==
+        AppDateUtils.normalizeDate(DateTime.now());
+    final hasTasks = tasks.isNotEmpty;
 
     return GestureDetector(
-      onTap: widget.onTaskTap != null ? () => widget.onTaskTap!(task) : null,
+      onTap: hasTasks
+          ? () => _showDaySheet(context, date, tasks)
+          : null,
       child: Container(
-        margin: const EdgeInsets.only(bottom: 4),
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         decoration: BoxDecoration(
-          color: task.status.color.withOpacity(0.18),
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: task.status.color.withOpacity(0.35)),
+          color: isToday
+              ? theme.colorScheme.primary.withOpacity(0.15)
+              : theme.colorScheme.surface,
+          border: Border.all(
+            color: isToday
+                ? theme.colorScheme.primary.withOpacity(0.5)
+                : theme.colorScheme.onSurface.withOpacity(0.10),
+            width: isToday ? 1.5 : 1,
+          ),
+          borderRadius: BorderRadius.circular(10),
         ),
-        child: Row(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            if (timeLabel != null)
-              Padding(
-                padding: const EdgeInsets.only(right: 6),
-                child: Text(
-                  timeLabel,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    fontWeight: FontWeight.w700,
-                    fontSize: 10,
-                  ),
-                ),
-              ),
-            Expanded(
-              child: Text(
-                task.title,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  fontWeight: FontWeight.w600,
-                  fontSize: 11,
-                ),
+            // Day number
+            Text(
+              AppDateUtils.formatDayNumber(date),
+              style: theme.textTheme.bodySmall?.copyWith(
+                fontSize: 12,
+                color: isToday
+                    ? theme.colorScheme.primary
+                    : inMonth
+                        ? theme.colorScheme.onSurface
+                        : theme.colorScheme.onSurface.withOpacity(0.3),
+                fontWeight: isToday ? FontWeight.w800 : FontWeight.w600,
               ),
             ),
+            if (hasTasks) ...[
+              const SizedBox(height: 4),
+              // Colored dots — up to 3
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  ...tasks.take(3).map(
+                    (t) => Container(
+                      width: 5,
+                      height: 5,
+                      margin: const EdgeInsets.symmetric(horizontal: 1),
+                      decoration: BoxDecoration(
+                        color: t.status.color,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                  ),
+                  if (tasks.length > 3)
+                    Container(
+                      width: 5,
+                      height: 5,
+                      margin: const EdgeInsets.symmetric(horizontal: 1),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.onSurface.withOpacity(0.3),
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                ],
+              ),
+            ],
           ],
         ),
       ),
     );
+  }
+
+  void _showDaySheet(BuildContext context, DateTime date, List<Task> tasks) {
+    final theme = Theme.of(context);
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: theme.cardColor,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Handle
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.onSurface.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  AppDateUtils.formatMonthYear(date).contains(date.year.toString())
+                      ? '${_weekdayLabel(date.weekday)}, ${AppDateUtils.formatDayNumber(date)} ${_monthLabel(date.month)}'
+                      : AppDateUtils.formatMonthYear(date),
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                ...tasks.map(
+                  (task) => ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: Container(
+                      width: 10,
+                      height: 10,
+                      decoration: BoxDecoration(
+                        color: task.status.color,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    title: Text(
+                      task.title,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    subtitle: task.description != null && task.description!.isNotEmpty
+                        ? Text(
+                            task.description!,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.bodySmall,
+                          )
+                        : null,
+                    trailing: Chip(
+                      label: Text(
+                        task.status.label,
+                        style: TextStyle(
+                          color: task.status.color,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      backgroundColor: task.status.color.withOpacity(0.12),
+                      side: BorderSide(color: task.status.color.withOpacity(0.3)),
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                    ),
+                    onTap: () {
+                      Navigator.pop(context);
+                      if (widget.onTaskTap != null) widget.onTaskTap!(task);
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  String _weekdayLabel(int weekday) {
+    const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    return days[(weekday - 1).clamp(0, 6)];
+  }
+
+  String _monthLabel(int month) {
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return months[(month - 1).clamp(0, 11)];
   }
 
   Widget _buildNoDueDateSection(ThemeData theme) {
