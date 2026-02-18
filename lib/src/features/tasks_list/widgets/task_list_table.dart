@@ -336,7 +336,7 @@ class _TaskListTableState extends State<TaskListTable> {
                           bottom: BorderSide(color: Color(0xFFE5E7EB), width: 1),
                         ),
                       ),
-                      padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 12),
+                      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
