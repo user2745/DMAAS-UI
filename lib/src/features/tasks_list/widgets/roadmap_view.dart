@@ -23,6 +23,7 @@ class RoadmapView extends StatefulWidget {
 
 class _RoadmapViewState extends State<RoadmapView> {
   final ScrollController _scrollController = ScrollController();
+  final ScrollController _verticalScrollController = ScrollController();
   RoadmapZoomLevel _zoomLevel = RoadmapZoomLevel.month;
   late DateTime _rangeStart;
   late DateTime _rangeEnd;
@@ -42,6 +43,7 @@ class _RoadmapViewState extends State<RoadmapView> {
   void dispose() {
     _scrollController.removeListener(_handleInfiniteScroll);
     _scrollController.dispose();
+    _verticalScrollController.dispose();
     super.dispose();
   }
 
@@ -49,7 +51,12 @@ class _RoadmapViewState extends State<RoadmapView> {
   Widget build(BuildContext context) {
     final tasks = widget.tasks;
     if (tasks.isEmpty) {
-      return const SizedBox.shrink();
+      return const Center(
+        child: Text(
+          'No tasks yet',
+          style: TextStyle(color: Color(0xFF8B949E)),
+        ),
+      );
     }
 
     final start = _rangeStart;
@@ -57,158 +64,191 @@ class _RoadmapViewState extends State<RoadmapView> {
     final totalDays = max(1, AppDateUtils.daysBetween(start, end) + 1);
 
     final dayWidth = _zoomLevel.dayWidth;
-    const rowHeight = 44.0;
-    const titleColumnWidth = 240.0;
-    const headerHeight = 52.0;
+    const rowHeight = 56.0;
+    const titleColumnWidth = 200.0;
+    const headerHeight = 56.0;
 
     final sortedTasks = List<Task>.from(tasks)
       ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
 
-    return SizedBox(
-      width: double.infinity,
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: titleColumnWidth,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                SizedBox(
-                  height: headerHeight,
-                  child: Align(
-                    alignment: Alignment.centerLeft,
-                    child: Text(
-                      'Task',
-                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.w700,
-                          ),
-                    ),
-                  ),
-                ),
-                ...sortedTasks.map(
-                  (task) => SizedBox(
-                    height: rowHeight,
-                    child: Align(
-                      alignment: Alignment.centerLeft,
-                      child: Text(
-                        task.title,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: Theme.of(context).textTheme.bodySmall,
-                      ),
-                    ),
-                  ),
-                ),
-                SizedBox(
-                  height: rowHeight,
-                  child: Align(
-                    alignment: Alignment.centerLeft,
-                    child: TextButton.icon(
-                      onPressed: widget.onAddTaskAtDate != null
-                          ? () => widget.onAddTaskAtDate!(
-                                DateTime.now().add(const Duration(days: 7)),
-                              )
-                          : null,
-                      icon: const Icon(Icons.add, size: 16),
-                      label: const Text('Add new task'),
-                      style: TextButton.styleFrom(
-                        padding: EdgeInsets.zero,
-                        alignment: Alignment.centerLeft,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Expanded(
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                final timelineWidth = max(
-                  totalDays * dayWidth,
-                  constraints.maxWidth + (dayWidth * 30),
-                );
-                return Column(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Controls row (zoom + today)
+        _buildControls(context),
+        // Gantt chart — fills remaining height
+        Expanded(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Frozen title column
+              SizedBox(
+                width: titleColumnWidth,
+                child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildControls(context),
+                    // Header cell
                     Container(
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.surface,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: Theme.of(context)
-                              .colorScheme
-                              .onSurface
-                              .withOpacity(0.08),
-                        ),
+                      height: headerHeight,
+                      alignment: Alignment.centerLeft,
+                      padding: const EdgeInsets.only(right: 8),
+                      child: Text(
+                        'Task',
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.w700,
+                            ),
                       ),
-                      padding: const EdgeInsets.symmetric(
-                        vertical: 12,
-                      ),
-                      child: SingleChildScrollView(
-                        controller: _scrollController,
-                        scrollDirection: Axis.horizontal,
-                        child: Stack(
-                          children: [
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                SizedBox(
-                                  height: headerHeight,
-                                  width: timelineWidth,
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      _buildMonthRow(
-                                        context,
-                                        start,
-                                        end,
-                                        dayWidth,
-                                      ),
-                                      _buildDayRow(
-                                        context,
-                                        start,
-                                        totalDays,
-                                        dayWidth,
-                                      ),
-                                    ],
+                    ),
+                    // Task title rows — vertically scrollable, synced
+                    Expanded(
+                      child: ListView.builder(
+                        controller: _verticalScrollController,
+                        physics: const ClampingScrollPhysics(),
+                        itemCount: sortedTasks.length + 1,
+                        itemBuilder: (context, index) {
+                          if (index == sortedTasks.length) {
+                            return SizedBox(
+                              height: rowHeight,
+                              child: Align(
+                                alignment: Alignment.centerLeft,
+                                child: TextButton.icon(
+                                  onPressed: widget.onAddTaskAtDate != null
+                                      ? () => widget.onAddTaskAtDate!(
+                                            DateTime.now()
+                                                .add(const Duration(days: 7)),
+                                          )
+                                      : null,
+                                  icon: const Icon(Icons.add, size: 16),
+                                  label: const Text('Add task'),
+                                  style: TextButton.styleFrom(
+                                    padding: EdgeInsets.zero,
+                                    alignment: Alignment.centerLeft,
                                   ),
                                 ),
-                                ...sortedTasks.map(
-                                  (task) => SizedBox(
-                                    height: rowHeight,
-                                    width: timelineWidth,
-                                    child: _buildTaskBar(
-                                      context,
-                                      task: task,
-                                      rangeStart: start,
-                                      dayWidth: dayWidth,
-                                    ),
+                              ),
+                            );
+                          }
+                          final task = sortedTasks[index];
+                          return Container(
+                            height: rowHeight,
+                            alignment: Alignment.centerLeft,
+                            decoration: BoxDecoration(
+                              border: Border(
+                                bottom: BorderSide(
+                                  color: const Color(0xFF21262D),
+                                  width: 1,
+                                ),
+                              ),
+                            ),
+                            padding: const EdgeInsets.only(right: 12),
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: 4,
+                                  height: 28,
+                                  decoration: BoxDecoration(
+                                    color: task.status.color,
+                                    borderRadius: BorderRadius.circular(2),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    task.title,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodySmall
+                                        ?.copyWith(fontSize: 13, height: 1.3),
                                   ),
                                 ),
                               ],
                             ),
-                            _buildTodayIndicator(
-                              context,
-                              rangeStart: start,
-                              dayWidth: dayWidth,
-                              height: headerHeight +
-                                  (rowHeight * sortedTasks.length),
-                            ),
-                          ],
-                        ),
+                          );
+                        },
                       ),
                     ),
                   ],
-                );
-              },
-            ),
+                ),
+              ),
+              const VerticalDivider(width: 1, color: Color(0xFF21262D)),
+              // Chart pane
+              Expanded(
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final timelineWidth = max(
+                      totalDays * dayWidth,
+                      constraints.maxWidth + (dayWidth * 30),
+                    );
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Sticky date header
+                        SizedBox(
+                          height: headerHeight,
+                          child: SingleChildScrollView(
+                            controller: _scrollController,
+                            scrollDirection: Axis.horizontal,
+                            physics: const NeverScrollableScrollPhysics(),
+                            child: SizedBox(
+                              width: timelineWidth,
+                              child: Column(
+                                children: [
+                                  _buildMonthRow(context, start, end, dayWidth),
+                                  _buildDayRow(context, start, totalDays, dayWidth),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                        // Scrollable chart body
+                        Expanded(
+                          child: NotificationListener<ScrollNotification>(
+                            onNotification: (n) {
+                              // sync vertical scroll to title column
+                              if (n is ScrollUpdateNotification &&
+                                  n.metrics.axis == Axis.vertical) {
+                                if (_verticalScrollController.hasClients) {
+                                  _verticalScrollController.jumpTo(
+                                      n.metrics.pixels);
+                                }
+                              }
+                              return false;
+                            },
+                            child: SingleChildScrollView(
+                              scrollDirection: Axis.horizontal,
+                              controller: _scrollController,
+                              child: SizedBox(
+                                width: timelineWidth,
+                                child: ListView.builder(
+                                  itemCount: sortedTasks.length,
+                                  itemExtent: rowHeight,
+                                  itemBuilder: (context, index) {
+                                    final task = sortedTasks[index];
+                                    return _buildTaskRow(
+                                      context,
+                                      task: task,
+                                      rangeStart: start,
+                                      dayWidth: dayWidth,
+                                      rowHeight: rowHeight,
+                                      totalWidth: timelineWidth,
+                                    );
+                                  },
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    );
+                  },
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
@@ -372,45 +412,21 @@ class _RoadmapViewState extends State<RoadmapView> {
     );
   }
 
-  Widget _buildTodayIndicator(
-    BuildContext context, {
-    required DateTime rangeStart,
-    required double dayWidth,
-    required double height,
-  }) {
-    final today = AppDateUtils.normalizeDate(DateTime.now());
-    final offsetDays = AppDateUtils.daysBetween(rangeStart, today);
-    if (offsetDays < 0) return const SizedBox.shrink();
-    final left = offsetDays * dayWidth;
-    return Positioned(
-      left: left,
-      top: 0,
-      child: Container(
-        width: 2,
-        height: height,
-        color: const Color(0xFFFF4D4F),
-      ),
-    );
-  }
-
   Widget _buildControls(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Row(
         children: [
-          const Spacer(),
-          TextButton.icon(
-            onPressed: _scrollToToday,
-            icon: const Icon(Icons.my_location, size: 16),
-            label: const Text('Today'),
-          ),
-          const SizedBox(width: 12),
+          // Zoom selector left-aligned
           DropdownButton<RoadmapZoomLevel>(
             value: _zoomLevel,
+            underline: const SizedBox.shrink(),
             onChanged: (value) {
               if (value == null) return;
               setState(() {
                 _zoomLevel = value;
+                _rangeStart = _getEffectiveRangeStart(widget.tasks, value);
+                _rangeEnd = _getEffectiveRangeEnd(widget.tasks, value);
               });
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 _scrollToToday();
@@ -420,68 +436,100 @@ class _RoadmapViewState extends State<RoadmapView> {
                 .map(
                   (level) => DropdownMenuItem(
                     value: level,
-                    child: Text(level.label),
+                    child: Text(level.label,
+                        style: const TextStyle(fontSize: 13)),
                   ),
                 )
                 .toList(),
+          ),
+          const Spacer(),
+          TextButton.icon(
+            onPressed: _scrollToToday,
+            icon: const Icon(Icons.my_location, size: 16),
+            label: const Text('Today'),
+            style: TextButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 8)),
           ),
         ],
       ),
     );
   }
-  Widget _buildTaskBar(
+  Widget _buildTaskRow(
     BuildContext context, {
     required Task task,
     required DateTime rangeStart,
     required double dayWidth,
+    required double rowHeight,
+    required double totalWidth,
   }) {
     final start = AppDateUtils.normalizeDate(task.createdAt);
     final end = AppDateUtils.normalizeDate(task.dueDate ?? task.createdAt);
     final offsetDays = AppDateUtils.daysBetween(rangeStart, start);
     final durationDays = max(1, AppDateUtils.daysBetween(start, end) + 1);
     final left = offsetDays * dayWidth;
-    final width = durationDays * dayWidth;
+    final barWidth = max(durationDays * dayWidth, 40.0);
+    final barHeight = rowHeight - 16;
 
     return GestureDetector(
       behavior: HitTestBehavior.translucent,
       onTapDown: (details) {
         final localX = details.localPosition.dx;
-        // Check if click is on the task bar
-        if (localX >= left && localX <= left + width) {
+        if (localX >= left && localX <= left + barWidth) {
           widget.onTaskTap?.call(task);
         } else if (widget.onAddTaskAtDate != null) {
-          // Click is on empty space - add new task
           final tappedDay = (localX / dayWidth).floor();
           final date = rangeStart.add(Duration(days: max(0, tappedDay)));
           widget.onAddTaskAtDate?.call(date);
         }
       },
-      child: Stack(
-        children: [
-          Positioned(
-            left: left,
-            top: 8,
-            child: Container(
-              width: width,
-              height: 28,
-              decoration: BoxDecoration(
-                color: task.status.color.withOpacity(0.35),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: task.status.color.withOpacity(0.7)),
-              ),
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              alignment: Alignment.centerLeft,
-              child: Text(
-                task.title,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
+      child: Container(
+        width: totalWidth,
+        height: rowHeight,
+        decoration: BoxDecoration(
+          border: Border(
+            bottom: BorderSide(color: const Color(0xFF21262D), width: 1),
+          ),
+        ),
+        child: Stack(
+          children: [
+            // Today line overlay (drawn per-row so it appears over grid)
+            Positioned(
+              left: AppDateUtils.daysBetween(
+                          rangeStart,
+                          AppDateUtils.normalizeDate(DateTime.now())) *
+                      dayWidth,
+              top: 0,
+              bottom: 0,
+              child: Container(width: 2, color: const Color(0x55FF4D4F)),
+            ),
+            // Task bar
+            Positioned(
+              left: left,
+              top: 8,
+              child: Container(
+                width: barWidth,
+                height: barHeight,
+                decoration: BoxDecoration(
+                  color: task.status.color.withAlpha(70),
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(
+                      color: task.status.color.withAlpha(180), width: 1.5),
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  task.title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 12,
+                        color: task.status.color,
+                      ),
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
