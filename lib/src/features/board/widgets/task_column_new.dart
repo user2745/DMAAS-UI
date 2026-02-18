@@ -73,9 +73,6 @@ class _TaskColumnState extends State<TaskColumn> {
 
   @override
   Widget build(BuildContext context) {
-    final borderColor = widget.status.color.withAlpha(80);
-    final highlightColor = widget.status.color.withAlpha(120);
-
     return DragTarget<Task>(
       onWillAcceptWithDetails: (details) {
         // Accept both cross-column and within-column drops
@@ -127,22 +124,23 @@ class _TaskColumnState extends State<TaskColumn> {
         return AnimatedContainer(
           duration: const Duration(milliseconds: 200),
           margin: const EdgeInsets.only(right: 12),
-          padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            color: Theme.of(
-              context,
-            ).cardColor.withAlpha(_isDraggingOver ? 255 : 230),
-            borderRadius: BorderRadius.circular(20),
+            color: _isDraggingOver
+                ? const Color(0xFF1C2128)
+                : const Color(0xFF161B22),
+            borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: _isDraggingOver ? highlightColor : borderColor,
-              width: _isDraggingOver ? 2.5 : 1.5,
+              color: _isDraggingOver
+                  ? widget.status.color
+                  : const Color(0xFF30363D),
+              width: _isDraggingOver ? 2 : 1,
             ),
             boxShadow: _isDraggingOver
                 ? [
                     BoxShadow(
-                      color: widget.status.color.withAlpha(60),
-                      blurRadius: 20,
-                      spreadRadius: 2,
+                      color: widget.status.color.withAlpha(40),
+                      blurRadius: 16,
+                      spreadRadius: 1,
                     ),
                   ]
                 : null,
@@ -151,18 +149,23 @@ class _TaskColumnState extends State<TaskColumn> {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              _buildHeader(context),
-              const SizedBox(height: 12),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(14, 14, 8, 12),
+                child: _buildHeader(context),
+              ),
+              const Divider(height: 1, thickness: 1, color: Color(0xFF21262D)),
+              const SizedBox(height: 8),
               Flexible(
                 child: widget.tasks.isEmpty
                     ? _EmptyColumn(status: widget.status)
                     : DragGateWidget(
                         child: RawScrollbar(
-                          thickness: 6,
-                          radius: const Radius.circular(3),
-                          thumbColor: Colors.grey.withOpacity(0.4),
+                          thickness: 4,
+                          radius: const Radius.circular(2),
+                          thumbColor: const Color(0xFF30363D),
                           child: SingleChildScrollView(
                             controller: _scrollController,
+                            padding: const EdgeInsets.fromLTRB(10, 0, 10, 12),
                             child: Column(
                               children: _buildTaskCards(),
                             ),
@@ -319,38 +322,32 @@ class _TaskColumnState extends State<TaskColumn> {
     return Row(
       children: [
         Container(
-          height: 10,
-          width: 10,
+          height: 8,
+          width: 8,
           decoration: BoxDecoration(
             color: widget.status.color,
             shape: BoxShape.circle,
-            boxShadow: [
-              BoxShadow(
-                color: widget.status.color.withAlpha(100),
-                blurRadius: 8,
-                spreadRadius: 1,
-              ),
-            ],
           ),
         ),
-        const SizedBox(width: 10),
+        const SizedBox(width: 8),
         Expanded(
           child: Text(
             widget.status.label,
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w800,
-              fontSize: 15,
-              letterSpacing: 0.5,
+            style: const TextStyle(
+              color: Color(0xFFE6EDF3),
+              fontWeight: FontWeight.w700,
+              fontSize: 14,
+              letterSpacing: 0.3,
             ),
           ),
         ),
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
           decoration: BoxDecoration(
-            color: widget.status.color.withAlpha(30),
-            borderRadius: BorderRadius.circular(12),
+            color: widget.status.color.withAlpha(25),
+            borderRadius: BorderRadius.circular(10),
             border: Border.all(
-              color: widget.status.color.withAlpha(80),
+              color: widget.status.color.withAlpha(70),
               width: 1,
             ),
           ),
@@ -358,28 +355,28 @@ class _TaskColumnState extends State<TaskColumn> {
             '${widget.tasks.length}',
             style: TextStyle(
               color: widget.status.color,
-              fontWeight: FontWeight.w800,
-              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              fontSize: 12,
             ),
           ),
         ),
-        const SizedBox(width: 6),
+        const SizedBox(width: 2),
         IconButton(
           tooltip: 'Add to ${widget.status.label}',
           onPressed: widget.onAdd,
-          icon: Icon(Icons.add_circle, color: widget.status.color),
-          iconSize: 24,
+          icon: Icon(Icons.add_circle_outline, color: widget.status.color),
+          iconSize: 20,
+          visualDensity: VisualDensity.compact,
+          padding: EdgeInsets.zero,
         ),
         if (widget.onCollapse != null)
           IconButton(
             tooltip: 'Collapse column',
             onPressed: widget.onCollapse,
-            icon: Icon(
-              Icons.chevron_left,
-              color: widget.status.color.withAlpha(180),
-            ),
-            iconSize: 20,
+            icon: const Icon(Icons.chevron_left, color: Color(0xFF8B949E)),
+            iconSize: 18,
             visualDensity: VisualDensity.compact,
+            padding: EdgeInsets.zero,
           ),
       ],
     );
@@ -393,44 +390,49 @@ class _EmptyColumn extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: Theme.of(context).scaffoldBackgroundColor.withAlpha(150),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: Theme.of(context).dividerColor.withAlpha(30),
-          style: BorderStyle.solid,
-          width: 2,
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(10, 0, 10, 12),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: const Color(0xFF21262D),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: const Color(0xFF30363D),
+            style: BorderStyle.solid,
+            width: 1,
+          ),
         ),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            Icons.inbox_outlined,
-            color: Theme.of(context).textTheme.bodySmall?.color?.withAlpha(100),
-            size: 40,
-          ),
-          const SizedBox(height: 12),
-          Text(
-            'No items in ${status.label}',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: Theme.of(context).textTheme.bodySmall?.color,
-              fontWeight: FontWeight.w600,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.inbox_outlined,
+              color: const Color(0xFF8B949E).withAlpha(120),
+              size: 36,
             ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 6),
-          Text(
-            'Drag tasks here or click + to add',
-            style: Theme.of(
-              context,
-            ).textTheme.bodySmall?.copyWith(fontSize: 11),
-            textAlign: TextAlign.center,
-          ),
-        ],
+            const SizedBox(height: 10),
+            Text(
+              'No items in ${status.label}',
+              style: const TextStyle(
+                color: Color(0xFF8B949E),
+                fontWeight: FontWeight.w600,
+                fontSize: 13,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 4),
+            const Text(
+              'Drag tasks here or tap + to add',
+              style: TextStyle(
+                color: Color(0xFF8B949E),
+                fontSize: 11,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
       ),
     );
   }
