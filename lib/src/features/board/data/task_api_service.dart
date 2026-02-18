@@ -10,7 +10,7 @@ class TaskApiService {
   final Future<String?> Function()? tokenProvider;
 
   TaskApiService({
-    this.baseUrl = const String.fromEnvironment('API_BASE_URL', defaultValue: 'https://74.208.213.94'),
+    this.baseUrl = const String.fromEnvironment('API_BASE_URL', defaultValue: 'https://74-208-213-94.nip.io'),
     http.Client? httpClient,
     this.tokenProvider,
   }) : httpClient = httpClient ?? http.Client();
