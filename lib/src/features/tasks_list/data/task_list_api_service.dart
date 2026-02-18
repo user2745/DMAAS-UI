@@ -10,7 +10,7 @@ class TaskListApiService {
   TaskListApiService({
     this.baseUrl = const String.fromEnvironment(
       'API_BASE_URL',
-      defaultValue: 'https://api.dmaas.trycloudflare.com',
+      defaultValue: 'http://74.208.213.94:3302',
     ),
     http.Client? httpClient,
   }) : httpClient = httpClient ?? http.Client();
