@@ -11,7 +11,7 @@ class FieldApiService {
   FieldApiService({
     this.baseUrl = const String.fromEnvironment(
       'API_BASE_URL',
-      defaultValue: 'http://74.208.213.94:3302',
+      defaultValue: 'https://74.208.213.94',
     ),
     http.Client? httpClient,
     this.tokenProvider,
