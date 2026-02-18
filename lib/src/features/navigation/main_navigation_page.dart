@@ -6,6 +6,11 @@ import '../auth/cubit/auth_state.dart';
 import '../auth/view/login_page.dart';
 import '../board/view/task_board_page.dart';
 import '../board/cubit/task_board_cubit.dart';
+import '../purchase/cubit/purchase_cubit.dart';
+import '../purchase/cubit/purchase_state.dart';
+import '../purchase/view/paywall_page.dart';
+import '../boost/cubit/boost_cubit.dart';
+import '../boost/cubit/boost_state.dart';
 import '../today/today_tasks_page.dart';
 import '../tasks_list/view/tasks_list_page.dart';
 
@@ -44,28 +49,60 @@ class _MainNavigationPageState extends State<MainNavigationPage>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'DMAAS',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.w800,
-                letterSpacing: 0.5,
-              ),
+    return BlocListener<PurchaseCubit, PurchaseState>(
+      listenWhen: (prev, curr) =>
+          !prev.hasHitLimit && curr.hasHitLimit && !curr.isPurchased,
+      listener: (context, state) {
+        PaywallPage.show(context);
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text(
+            'DMAAS',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 0.5,
             ),
-            Text(
-              'Decision Making & Activities Accounting System',
-              style: Theme.of(
-                context,
-              ).textTheme.bodySmall?.copyWith(fontSize: 11, letterSpacing: 0.2),
-            ),
-          ],
-        ),
+          ),
         actions: [
+          // ⚡ Credit badge
+          BlocBuilder<BoostCubit, BoostState>(
+            builder: (context, boostState) {
+              if (!boostState.creditsLoaded) return const SizedBox.shrink();
+              return Padding(
+                padding: const EdgeInsets.only(right: 4),
+                child: Center(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF21262D),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                          color: const Color(0xFFBB86FC).withAlpha(80)),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Text('⚡',
+                            style: TextStyle(fontSize: 12)),
+                        const SizedBox(width: 4),
+                        Text(
+                          '${boostState.credits}',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Color(0xFFBB86FC),
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
           BlocBuilder<AuthCubit, AuthState>(
             builder: (context, authState) {
               if (authState.status == AuthStatus.authenticated) {
@@ -131,9 +168,9 @@ class _MainNavigationPageState extends State<MainNavigationPage>
         bottom: TabBar(
           controller: _tabController,
           tabs: const [
-            Tab(icon: Icon(Icons.view_week), text: 'Weekly Activities'),
-            Tab(icon: Icon(Icons.today), text: "Today's Activities"),
-            Tab(icon: Icon(Icons.task_alt), text: 'Activities List'),
+            Tab(icon: Icon(Icons.view_week), text: 'Board'),
+            Tab(icon: Icon(Icons.today), text: 'Today'),
+            Tab(icon: Icon(Icons.task_alt), text: 'List'),
           ],
         ),
       ),
@@ -144,6 +181,7 @@ class _MainNavigationPageState extends State<MainNavigationPage>
           TodayTasksPage(),
           TasksListPage(),
         ],
+      ),
       ),
     );
   }
