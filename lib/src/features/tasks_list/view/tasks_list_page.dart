@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../board/models/task.dart';
 import '../../board/widgets/task_detail_modal.dart';
+import '../../purchase/cubit/purchase_cubit.dart';
 import '../cubit/tasks_list_cubit.dart';
 import '../models/field.dart';
 import '../widgets/calendar_view.dart';
@@ -86,6 +87,38 @@ class _TasksListPageState extends State<TasksListPage> {
             );
           }
 
+          // Roadmap gets full body height — no outer scroll wrapper
+          if (state.viewMode == TaskViewMode.roadmap) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+                  child: AnimatedFocusTextField(
+                    prefixIcon: const Icon(Icons.search),
+                    hintText: 'Filter by keyword or by field',
+                    onChanged: (value) {
+                      context.read<TasksListCubit>().setQuery(value);
+                    },
+                  ),
+                ),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+                    child: RoadmapView(
+                      key: const ValueKey('roadmap_view'),
+                      tasks: state.sortedTasks,
+                      onAddTaskAtDate: (date) {
+                        _showCreateTaskDialog(context, initialDueDate: date);
+                      },
+                      onTaskTap: (task) => _showTaskDetails(context, task),
+                    ),
+                  ),
+                ),
+              ],
+            );
+          }
+
           return RefreshIndicator(
             onRefresh: () async {
               await context.read<TasksListCubit>().loadInitialData();
@@ -93,7 +126,7 @@ class _TasksListPageState extends State<TasksListPage> {
             child: SingleChildScrollView(
               physics: const AlwaysScrollableScrollPhysics(),
               child: Padding(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(20),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -152,6 +185,7 @@ class _TasksListPageState extends State<TasksListPage> {
                                 dueDate: null,
                                 fieldValues: const {},
                               );
+                              context.read<PurchaseCubit>().onTaskCreated();
                             },
                             onFieldValueChange: (taskId, fieldId, value) {
                               context.read<TasksListCubit>().updateTaskFieldValue(
@@ -173,17 +207,7 @@ class _TasksListPageState extends State<TasksListPage> {
                             onTaskTap: (task) => _showTaskDetails(context, task),
                           );
                         } else {
-                          viewBody = RoadmapView(
-                            key: const ValueKey('roadmap_view'),
-                            tasks: state.sortedTasks,
-                            onAddTaskAtDate: (date) {
-                              _showCreateTaskDialog(
-                                context,
-                                initialDueDate: date,
-                              );
-                            },
-                            onTaskTap: (task) => _showTaskDetails(context, task),
-                          );
+                          viewBody = const SizedBox.shrink();
                         }
 
                         return AnimatedSwitcher(
@@ -232,6 +256,7 @@ class _TasksListPageState extends State<TasksListPage> {
             dueDate: dueDate,
             fieldValues: fieldValues,
           );
+          context.read<PurchaseCubit>().onTaskCreated();
           Navigator.pop(context);
         },
       ),
