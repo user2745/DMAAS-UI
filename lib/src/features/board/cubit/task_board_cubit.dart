@@ -135,6 +135,8 @@ class TaskBoardCubit extends Cubit<TaskBoardState> {
     required String title,
     String? description,
     DateTime? dueDate,
+    DateTime? startDate,
+    int? estimatedDays,
     Map<String, Object?>? fieldValues,
   }) async {
     try {
@@ -142,6 +144,8 @@ class TaskBoardCubit extends Cubit<TaskBoardState> {
         title: title,
         description: description,
         dueDate: dueDate,
+        startDate: startDate,
+        estimatedDays: estimatedDays,
         fieldValues: fieldValues,
       );
       final updated = [task, ...state.tasks];
@@ -159,6 +163,8 @@ class TaskBoardCubit extends Cubit<TaskBoardState> {
         description: task.description,
         status: task.status.value,
         dueDate: task.dueDate,
+        startDate: task.startDate,
+        estimatedDays: task.estimatedDays,
         order: task.order,
       );
       final updated = state.tasks

@@ -82,6 +82,8 @@ class Task extends Equatable {
     this.order = 0,
     this.description,
     this.dueDate,
+    this.startDate,
+    this.estimatedDays,
     this.fieldValues,
     this.categoryId,
     this.comments = const [],
@@ -94,6 +96,10 @@ class Task extends Equatable {
   final DateTime createdAt;
   final int order;
   final DateTime? dueDate;
+  /// Explicit Gantt bar start. Falls back to [createdAt] when null.
+  final DateTime? startDate;
+  /// Duration in days used for workback schedule calculation.
+  final int? estimatedDays;
   final Map<String, dynamic>? fieldValues;
   final String? categoryId;
   final List<TaskComment> comments;
@@ -109,6 +115,9 @@ class Task extends Equatable {
           : DateTime.now(),
       order: (json['order'] as num?)?.toInt() ?? 0,
       dueDate: json['dueDate'] != null ? DateTime.parse(json['dueDate']) : null,
+      startDate:
+          json['startDate'] != null ? DateTime.parse(json['startDate']) : null,
+      estimatedDays: (json['estimatedDays'] as num?)?.toInt(),
       fieldValues: json['fieldValues'] is Map<String, dynamic>
           ? json['fieldValues'] as Map<String, dynamic>
           : (json['fieldValues'] is Map
@@ -130,6 +139,8 @@ class Task extends Equatable {
       'status': status.value,
       'order': order,
       if (dueDate != null) 'dueDate': dueDate?.toIso8601String(),
+      if (startDate != null) 'startDate': startDate?.toIso8601String(),
+      if (estimatedDays != null) 'estimatedDays': estimatedDays,
       if (fieldValues != null) 'fieldValues': fieldValues,
       if (categoryId != null) 'categoryId': categoryId,
     };
@@ -143,6 +154,8 @@ class Task extends Equatable {
     DateTime? createdAt,
     int? order,
     DateTime? dueDate,
+    Object? startDate = _sentinel,
+    Object? estimatedDays = _sentinel,
     Map<String, dynamic>? fieldValues,
     String? categoryId,
     List<TaskComment>? comments,
@@ -155,6 +168,12 @@ class Task extends Equatable {
       createdAt: createdAt ?? this.createdAt,
       order: order ?? this.order,
       dueDate: dueDate ?? this.dueDate,
+      startDate: startDate == _sentinel
+          ? this.startDate
+          : startDate as DateTime?,
+      estimatedDays: estimatedDays == _sentinel
+          ? this.estimatedDays
+          : estimatedDays as int?,
       fieldValues: fieldValues ?? this.fieldValues,
       categoryId: categoryId ?? this.categoryId,
       comments: comments ?? this.comments,
@@ -170,8 +189,13 @@ class Task extends Equatable {
     createdAt,
     order,
     dueDate,
+    startDate,
+    estimatedDays,
     fieldValues,
     categoryId,
     comments,
   ];
 }
+
+// Sentinel used so copyWith can distinguish "not passed" from "explicitly null".
+const Object _sentinel = Object();

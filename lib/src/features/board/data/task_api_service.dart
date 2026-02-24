@@ -50,6 +50,8 @@ class TaskApiService {
     String? description,
     String status = 'todo',
     DateTime? dueDate,
+    DateTime? startDate,
+    int? estimatedDays,
     Map<String, Object?>? fieldValues,
   }) async {
     try {
@@ -58,6 +60,8 @@ class TaskApiService {
         if (description != null) 'description': description,
         'status': status,
         if (dueDate != null) 'dueDate': dueDate.toIso8601String(),
+        if (startDate != null) 'startDate': startDate.toIso8601String(),
+        if (estimatedDays != null) 'estimatedDays': estimatedDays,
         if (fieldValues != null)
           'fieldValues': fieldValues.map((key, value) {
             if (value is DateTime) {
@@ -89,6 +93,8 @@ class TaskApiService {
     String? description,
     String? status,
     DateTime? dueDate,
+    Object? startDate = _apiSentinel,
+    Object? estimatedDays = _apiSentinel,
     Map<String, Object?>? fieldValues,
     int? order,
   }) async {
@@ -98,6 +104,11 @@ class TaskApiService {
         if (description != null) 'description': description,
         if (status != null) 'status': status,
         if (dueDate != null) 'dueDate': dueDate.toIso8601String(),
+        if (startDate != _apiSentinel)
+          'startDate': startDate == null
+              ? null
+              : (startDate as DateTime).toIso8601String(),
+        if (estimatedDays != _apiSentinel) 'estimatedDays': estimatedDays,
         if (fieldValues != null)
           'fieldValues': fieldValues.map((key, value) {
             if (value is DateTime) {
@@ -215,3 +226,5 @@ class TaskApiService {
     }
   }
 }
+
+const Object _apiSentinel = Object();
