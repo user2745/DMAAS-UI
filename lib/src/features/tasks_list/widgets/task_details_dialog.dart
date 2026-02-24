@@ -378,7 +378,7 @@ class _TaskDetailsDialogState extends State<TaskDetailsDialog>
                       context,
                       icon: Icons.fingerprint,
                       label: 'Task ID',
-                      value: widget.task.id.substring(0, 12) + '...',
+                      value: '${widget.task.id.substring(0, 12)}...',
                       isCode: true,
                     ),
                   ],

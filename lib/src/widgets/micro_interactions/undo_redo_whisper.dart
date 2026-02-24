@@ -43,7 +43,7 @@ class _UndoRedoWhisperState extends State<UndoRedoWhisper>
   late AnimationController _arrowController;
   late AnimationController _expandController;
 
-  bool _isExpanded = false;
+  final bool _isExpanded = false;
 
   @override
   void initState() {

@@ -16,16 +16,16 @@ extension AnimatedButtonStyles on ButtonStyle {
   }) {
     return ButtonStyle(
       // Smooth elevation changes provide visual feedback
-      elevation: MaterialStateProperty.resolveWith<double>((states) {
-        if (states.contains(MaterialState.pressed)) {
+      elevation: WidgetStateProperty.resolveWith<double>((states) {
+        if (states.contains(WidgetState.pressed)) {
           return pressElevation;
-        } else if (states.contains(MaterialState.hovered)) {
+        } else if (states.contains(WidgetState.hovered)) {
           return hoverElevation;
         }
         return 2;
       }),
-      overlayColor: MaterialStateProperty.resolveWith<Color?>((states) {
-        if (states.contains(MaterialState.hovered)) {
+      overlayColor: WidgetStateProperty.resolveWith<Color?>((states) {
+        if (states.contains(WidgetState.hovered)) {
           return Colors.transparent; // We handle visual feedback with elevation
         }
         return null;

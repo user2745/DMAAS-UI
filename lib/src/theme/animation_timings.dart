@@ -9,6 +9,7 @@
 /// - Loading/breathing: 1.2-1.5s (calm, not urgent)
 /// - Deletion undo window: 5s (slow enough for safety, fast enough for flow)
 /// - Progress indicators: 400-600ms loops (meditative)
+library;
 
 class AnimationTimings {
   /// A/B testing flags to globally adjust animation feel
