@@ -53,6 +53,8 @@ class _TaskEditorSheetState extends State<TaskEditorSheet> {
   late final TextEditingController _descriptionController;
   late TaskStatus _status;
   late DateTime? _dueDate;
+  late DateTime? _startDate;
+  late int? _estimatedDays;
   late Map<String, TextEditingController> _textControllers;
   late Map<String, String?> _singleSelectValues;
   late Map<String, DateTime?> _dateValues;
@@ -66,6 +68,8 @@ class _TaskEditorSheetState extends State<TaskEditorSheet> {
     );
     _status = widget.task?.status ?? widget.initialStatus ?? TaskStatus.todo;
     _dueDate = widget.task?.dueDate;
+    _startDate = widget.task?.startDate;
+    _estimatedDays = widget.task?.estimatedDays;
     
     // Initialize field controllers
     _textControllers = {
@@ -298,7 +302,157 @@ class _TaskEditorSheetState extends State<TaskEditorSheet> {
                     ),
                   ],
                 ),
-                
+                const SizedBox(height: 16),
+
+                // Start Date (Gantt/Workback)
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Start Date',
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Container(
+                      decoration: BoxDecoration(
+                        border: Border.all(
+                          color: theme.colorScheme.outline.withOpacity(0.3),
+                        ),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: ListTile(
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 4,
+                        ),
+                        dense: true,
+                        title: Text(
+                          _startDate != null
+                              ? '${_startDate!.month}/${_startDate!.day}/${_startDate!.year}'
+                              : 'Not set (uses created date)',
+                          style: theme.textTheme.labelMedium,
+                        ),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            if (_startDate != null)
+                              IconButton(
+                                icon: const Icon(Icons.clear),
+                                onPressed: () {
+                                  setState(() => _startDate = null);
+                                },
+                                iconSize: 18,
+                                constraints: const BoxConstraints(
+                                  minWidth: 32,
+                                  minHeight: 32,
+                                ),
+                              ),
+                            IconButton(
+                              icon: const Icon(Icons.calendar_today),
+                              onPressed: () => _pickStartDate(context),
+                              iconSize: 18,
+                              constraints: const BoxConstraints(
+                                minWidth: 32,
+                                minHeight: 32,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+
+                // Estimated Days (Workback)
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Text(
+                          'Estimated Days',
+                          style: theme.textTheme.labelMedium?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.secondaryContainer,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            'Workback',
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              color: theme.colorScheme.onSecondaryContainer,
+                              fontSize: 9,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Container(
+                      decoration: BoxDecoration(
+                        border: Border.all(
+                          color: theme.colorScheme.outline.withOpacity(0.3),
+                        ),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.remove),
+                            iconSize: 18,
+                            constraints: const BoxConstraints(
+                              minWidth: 40,
+                              minHeight: 40,
+                            ),
+                            onPressed: () {
+                              setState(() {
+                                final current = _estimatedDays ?? 1;
+                                _estimatedDays =
+                                    current > 1 ? current - 1 : null;
+                              });
+                            },
+                          ),
+                          Expanded(
+                            child: Center(
+                              child: Text(
+                                _estimatedDays != null
+                                    ? '$_estimatedDays day${_estimatedDays == 1 ? '' : 's'}'
+                                    : 'Not set',
+                                style: theme.textTheme.labelMedium,
+                              ),
+                            ),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.add),
+                            iconSize: 18,
+                            constraints: const BoxConstraints(
+                              minWidth: 40,
+                              minHeight: 40,
+                            ),
+                            onPressed: () {
+                              setState(() {
+                                _estimatedDays = (_estimatedDays ?? 0) + 1;
+                              });
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+
                 // Custom Fields
                 if (widget.fields.isNotEmpty) ...[
                   const SizedBox(height: 18),
@@ -472,7 +626,7 @@ class _TaskEditorSheetState extends State<TaskEditorSheet> {
             ),
             const SizedBox(height: 6),
             DropdownButtonFormField<String>(
-              value: _singleSelectValues[field.id],
+              initialValue: _singleSelectValues[field.id],
               decoration: InputDecoration(
                 labelText: '',
                 hintText: 'Select ${field.name.toLowerCase()}...',
@@ -608,6 +762,18 @@ class _TaskEditorSheetState extends State<TaskEditorSheet> {
     }
   }
 
+  Future<void> _pickStartDate(BuildContext context) async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _startDate ?? DateTime.now(),
+      firstDate: DateTime.now().subtract(const Duration(days: 365 * 5)),
+      lastDate: DateTime.now().add(const Duration(days: 365 * 5)),
+    );
+    if (picked != null) {
+      setState(() => _startDate = picked);
+    }
+  }
+
   void _submit(BuildContext context) {
     if (!_formKey.currentState!.validate()) {
       return;
@@ -625,6 +791,8 @@ class _TaskEditorSheetState extends State<TaskEditorSheet> {
         title: trimmedTitle,
         description: trimmedDescription.isEmpty ? null : trimmedDescription,
         dueDate: _dueDate,
+        startDate: _startDate,
+        estimatedDays: _estimatedDays,
         fieldValues: fieldValues,
       );
       context.read<PurchaseCubit>().onTaskCreated();
@@ -634,6 +802,8 @@ class _TaskEditorSheetState extends State<TaskEditorSheet> {
         description: trimmedDescription.isEmpty ? null : trimmedDescription,
         status: _status,
         dueDate: _dueDate,
+        startDate: _startDate,
+        estimatedDays: _estimatedDays,
       );
       cubit.updateTask(task);
     }
