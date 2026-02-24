@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../board/models/task.dart';
 import '../../board/widgets/task_detail_modal.dart';
 import '../../purchase/cubit/purchase_cubit.dart';
+import '../../preferences/cubit/preferences_cubit.dart';
 import '../cubit/tasks_list_cubit.dart';
 import '../models/field.dart';
 import '../widgets/calendar_view.dart';
@@ -24,7 +25,9 @@ class _TasksListPageState extends State<TasksListPage> {
   @override
   void initState() {
     super.initState();
-    context.read<TasksListCubit>().loadInitialData();
+    final cubit = context.read<TasksListCubit>();
+    cubit.loadInitialData();
+    cubit.syncFromPreferences(context.read<PreferencesCubit>());
   }
 
   @override
@@ -469,7 +472,7 @@ class _CreateTaskDialogState extends State<CreateTaskDialog> {
             ),
             const SizedBox(height: 6),
             DropdownButtonFormField<String>(
-              value: _singleSelectValues[field.id],
+              initialValue: _singleSelectValues[field.id],
               decoration: InputDecoration(
                 labelText: '',
                 hintText: 'Select ${field.name.toLowerCase()}...',

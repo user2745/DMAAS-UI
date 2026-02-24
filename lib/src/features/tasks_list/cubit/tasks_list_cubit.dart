@@ -8,6 +8,7 @@ import '../../board/models/task.dart';
 import '../data/field_api_service.dart';
 import '../models/field.dart';
 import '../models/assignee.dart';
+import '../../preferences/cubit/preferences_cubit.dart';
 
 class TasksListState extends Equatable {
   const TasksListState({
@@ -22,6 +23,8 @@ class TasksListState extends Equatable {
     this.query = '',
     this.isLoading = false,
     this.error,
+    this.scheduleMode = ScheduleMode.gantt,
+    this.groupByFieldId,
   });
 
   final List<Task> tasks;
@@ -38,6 +41,56 @@ class TasksListState extends Equatable {
   final String query;
   final bool isLoading;
   final String? error;
+  /// Current schedule mode for the Roadmap view.
+  final ScheduleMode scheduleMode;
+  /// null = no grouping, '__status__' = group by TaskStatus,
+  /// otherwise a Field.id (singleSelect or text type).
+  final String? groupByFieldId;
+
+  /// Returns tasks grouped for the Roadmap swimlane view.
+  /// Key is the group label; value is sorted tasks in that group.
+  /// Uses [sortedTasks] ordering within each group.
+  Map<String, List<Task>> get groupedRoadmapTasks {
+    final source = sortedTasks;
+    final gid = groupByFieldId;
+
+    // No grouping — single implicit group
+    if (gid == null) return {'': source};
+
+    // Group by status
+    if (gid == '__status__') {
+      final map = <String, List<Task>>{};
+      for (final task in source) {
+        map.putIfAbsent(task.status.label, () => []).add(task);
+      }
+      return map;
+    }
+
+    // Group by a Field value (singleSelect exact match / text case-insensitive)
+    final field = getFieldById(gid);
+    final map = <String, List<Task>>{};
+    for (final task in source) {
+      final raw = (taskFieldValuesByTaskId[task.id] ?? {})[gid];
+      final key = raw != null && raw.toString().trim().isNotEmpty
+          ? raw.toString().trim().toLowerCase()
+          : null;
+      final label = key ?? '(No value)';
+      map.putIfAbsent(label, () => []).add(task);
+    }
+    // For singleSelect, preserve the declared option order
+    if (field != null && field.type == FieldType.singleSelect) {
+      final ordered = <String, List<Task>>{};
+      for (final option in field.options) {
+        final k = option.toLowerCase();
+        if (map.containsKey(k)) ordered[option] = map[k]!;
+      }
+      if (map.containsKey('(No value)')) {
+        ordered['(No value)'] = map['(No value)']!;
+      }
+      return ordered;
+    }
+    return map;
+  }
 
   /// Get filtered tasks based on search query
   List<Task> get filteredTasks => _applyQueryFilter(tasks);
@@ -114,6 +167,8 @@ class TasksListState extends Equatable {
     String? query,
     bool? isLoading,
     String? error,
+    ScheduleMode? scheduleMode,
+    Object? groupByFieldId = _cubitSentinel,
   }) => TasksListState(
     tasks: tasks ?? this.tasks,
     fields: fields ?? this.fields,
@@ -127,6 +182,10 @@ class TasksListState extends Equatable {
     query: query ?? this.query,
     isLoading: isLoading ?? this.isLoading,
     error: error,
+    scheduleMode: scheduleMode ?? this.scheduleMode,
+    groupByFieldId: groupByFieldId == _cubitSentinel
+        ? this.groupByFieldId
+        : groupByFieldId as String?,
   );
 
   @override
@@ -142,12 +201,20 @@ class TasksListState extends Equatable {
     query,
     isLoading,
     error,
+    scheduleMode,
+    groupByFieldId,
   ];
 }
+
+// Sentinel for copyWith nullable params.
+const Object _cubitSentinel = Object();
 
 enum TaskViewMode { list, calendar, roadmap }
 
 enum TaskSortKey { manual, title, status, dueDate, createdAt }
+
+/// Controls bar-date resolution in the Roadmap view.
+enum ScheduleMode { gantt, workback }
 
 class TasksListCubit extends Cubit<TasksListState> {
   TasksListCubit({
@@ -170,6 +237,18 @@ class TasksListCubit extends Cubit<TasksListState> {
   final TaskApiService _taskApiService;
   final FieldApiService _fieldApiService;
   Timer? _syncTimer;
+
+  /// Sync roadmap settings from the PreferencesCubit into local state.
+  void syncFromPreferences(PreferencesCubit preferencesCubit) {
+    final prefs = preferencesCubit.state;
+    final mode = prefs.roadmapScheduleMode == 'workback'
+        ? ScheduleMode.workback
+        : ScheduleMode.gantt;
+    emit(state.copyWith(
+      scheduleMode: mode,
+      groupByFieldId: prefs.roadmapGroupByFieldId,
+    ));
+  }
 
   @override
   Future<void> close() {
@@ -276,6 +355,24 @@ class TasksListCubit extends Cubit<TasksListState> {
     final isSameKey = key == state.sortKey;
     final nextAscending = isSameKey ? !state.sortAscending : true;
     emit(state.copyWith(sortKey: key, sortAscending: nextAscending));
+  }
+
+  void setScheduleMode(
+    ScheduleMode mode, {
+    PreferencesCubit? preferencesCubit,
+  }) {
+    emit(state.copyWith(scheduleMode: mode));
+    preferencesCubit?.setRoadmapScheduleMode(
+      mode == ScheduleMode.gantt ? 'gantt' : 'workback',
+    );
+  }
+
+  void setGroupBy(
+    String? fieldId, {
+    PreferencesCubit? preferencesCubit,
+  }) {
+    emit(state.copyWith(groupByFieldId: fieldId));
+    preferencesCubit?.setRoadmapGroupBy(fieldId);
   }
 
   Future<void> createField({
