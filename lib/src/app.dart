@@ -12,6 +12,8 @@ import 'features/navigation/main_navigation_page.dart';
 import 'features/purchase/cubit/purchase_cubit.dart';
 import 'features/boost/cubit/boost_cubit.dart';
 import 'features/boost/data/boost_service.dart';
+import 'features/preferences/cubit/preferences_cubit.dart';
+import 'features/preferences/data/preferences_api_service.dart';
 import 'theme/app_theme.dart';
 
 class TaskBoardApp extends StatelessWidget {
@@ -48,6 +50,13 @@ class TaskBoardApp extends StatelessWidget {
               tokenProvider: context.read<AuthCubit>().getIdToken,
             ),
           ),
+        ),
+        BlocProvider<PreferencesCubit>(
+          create: (context) => PreferencesCubit(
+            apiService: PreferencesApiService(
+              tokenProvider: context.read<AuthCubit>().getIdToken,
+            ),
+          )..load(),
         ),
         BlocProvider<TasksListCubit>(
           create: (context) => TasksListCubit(
