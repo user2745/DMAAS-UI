@@ -23,6 +23,7 @@ class TaskListTable extends StatefulWidget {
     required this.onAddTask,
     required this.onReorder,
     this.onFieldValueChange,
+    this.onFieldReorder,
   });
 
   final List<Task> tasks;
@@ -39,6 +40,7 @@ class TaskListTable extends StatefulWidget {
   final void Function(int oldIndex, int newIndex) onReorder;
   final void Function(String taskId, String fieldId, Object? value)?
   onFieldValueChange;
+  final void Function(int oldIndex, int newIndex)? onFieldReorder;
 
   @override
   State<TaskListTable> createState() => _TaskListTableState();
@@ -208,90 +210,120 @@ class _TaskListTableState extends State<TaskListTable> {
                       onTap: () => widget.onSortChanged(TaskSortKey.dueDate),
                     ),
                     _headerCell(label: 'Actions', width: 100),
-                    ...widget.fields.map((field) {
-                      return SizedBox(
-                        width: 140,
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: Text(
-                                field.name,
-                                style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                                      color: field.color,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
+                    ...widget.fields.asMap().entries.map((entry) {
+                      final fieldIndex = entry.key;
+                      final field = entry.value;
+                      return DragTarget<int>(
+                        onAccept: (fromIndex) {
+                          if (fromIndex != fieldIndex) {
+                            widget.onFieldReorder?.call(fromIndex, fieldIndex);
+                          }
+                        },
+                        builder: (context, candidateData, rejectedData) {
+                          return Draggable<int>(
+                            data: fieldIndex,
+                            feedback: Material(
+                              elevation: 4,
+                              child: Container(
+                                width: 140,
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                                color: Colors.white,
+                                child: Text(
+                                  field.name,
+                                  style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                                    color: field.color,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
                               ),
                             ),
-                            PopupMenuButton<String>(
-                              icon: Icon(Icons.more_vert, size: 16, color: Colors.grey[600]),
-                              padding: EdgeInsets.zero,
-                              iconSize: 16,
-                              tooltip: 'Field options',
-                              offset: const Offset(0, 40),
-                              itemBuilder: (context) => [
-                                PopupMenuItem(
-                                  value: 'sort_asc',
-                                  child: Row(
-                                    children: [
-                                      Icon(Icons.arrow_upward, size: 16, color: Colors.grey[700]),
-                                      const SizedBox(width: 8),
-                                      const Text('Sort A → Z'),
-                                    ],
+                            child: Container(
+                              width: 140,
+                              color: candidateData.isNotEmpty ? Colors.grey[100] : null,
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      field.name,
+                                      style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                                            color: field.color,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
                                   ),
-                                ),
-                                PopupMenuItem(
-                                  value: 'sort_desc',
-                                  child: Row(
-                                    children: [
-                                      Icon(Icons.arrow_downward, size: 16, color: Colors.grey[700]),
-                                      const SizedBox(width: 8),
-                                      const Text('Sort Z → A'),
+                                  PopupMenuButton<String>(
+                                    icon: Icon(Icons.more_vert, size: 16, color: Colors.grey[600]),
+                                    padding: EdgeInsets.zero,
+                                    iconSize: 16,
+                                    tooltip: 'Field options',
+                                    offset: const Offset(0, 40),
+                                    itemBuilder: (context) => [
+                                      PopupMenuItem(
+                                        value: 'sort_asc',
+                                        child: Row(
+                                          children: [
+                                            Icon(Icons.arrow_upward, size: 16, color: Colors.grey[700]),
+                                            const SizedBox(width: 8),
+                                            const Text('Sort A → Z'),
+                                          ],
+                                        ),
+                                      ),
+                                      PopupMenuItem(
+                                        value: 'sort_desc',
+                                        child: Row(
+                                          children: [
+                                            Icon(Icons.arrow_downward, size: 16, color: Colors.grey[700]),
+                                            const SizedBox(width: 8),
+                                            const Text('Sort Z → A'),
+                                          ],
+                                        ),
+                                      ),
+                                      const PopupMenuDivider(),
+                                      PopupMenuItem(
+                                        value: 'edit',
+                                        child: Row(
+                                          children: [
+                                            Icon(Icons.edit_outlined, size: 16, color: Colors.grey[700]),
+                                            const SizedBox(width: 8),
+                                            const Text('Edit Field'),
+                                          ],
+                                        ),
+                                      ),
+                                      PopupMenuItem(
+                                        value: 'delete',
+                                        child: Row(
+                                          children: [
+                                            const Icon(Icons.delete_outline, size: 16, color: Colors.red),
+                                            const SizedBox(width: 8),
+                                            Text('Delete Field', style: TextStyle(color: Colors.red[700])),
+                                          ],
+                                        ),
+                                      ),
                                     ],
+                                    onSelected: (value) {
+                                      switch (value) {
+                                        case 'sort_asc':
+                                          _sortByField(field.id, ascending: true);
+                                          break;
+                                        case 'sort_desc':
+                                          _sortByField(field.id, ascending: false);
+                                          break;
+                                        case 'edit':
+                                          _showEditFieldDialog(context, field);
+                                          break;
+                                        case 'delete':
+                                          _showDeleteFieldConfirmation(context, field);
+                                          break;
+                                      }
+                                    },
                                   ),
-                                ),
-                                const PopupMenuDivider(),
-                                PopupMenuItem(
-                                  value: 'edit',
-                                  child: Row(
-                                    children: [
-                                      Icon(Icons.edit_outlined, size: 16, color: Colors.grey[700]),
-                                      const SizedBox(width: 8),
-                                      const Text('Edit Field'),
-                                    ],
-                                  ),
-                                ),
-                                PopupMenuItem(
-                                  value: 'delete',
-                                  child: Row(
-                                    children: [
-                                      const Icon(Icons.delete_outline, size: 16, color: Colors.red),
-                                      const SizedBox(width: 8),
-                                      Text('Delete Field', style: TextStyle(color: Colors.red[700])),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                              onSelected: (value) {
-                                switch (value) {
-                                  case 'sort_asc':
-                                    _sortByField(field.id, ascending: true);
-                                    break;
-                                  case 'sort_desc':
-                                    _sortByField(field.id, ascending: false);
-                                    break;
-                                  case 'edit':
-                                    _showEditFieldDialog(context, field);
-                                    break;
-                                  case 'delete':
-                                    _showDeleteFieldConfirmation(context, field);
-                                    break;
-                                }
-                              },
+                                ],
+                              ),
                             ),
-                          ],
-                        ),
+                          );
+                        },
                       );
                     }),
                     SizedBox(
@@ -353,23 +385,31 @@ class _TaskListTableState extends State<TaskListTable> {
                                   ),
                                 ),
                                 const SizedBox(width: 4),
-                                Text(
-                                  '${index + 1}',
-                                  style: TextStyle(color: Colors.grey[500], fontSize: 13),
+                                Expanded(
+                                  child: Text(
+                                    task.ticketNumber != null ? 'T-${task.ticketNumber}' : 'T-${index + 1}',
+                                    style: TextStyle(color: Colors.grey[500], fontSize: 13),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
                                 ),
                               ],
                             ),
                           ),
                           SizedBox(
                             width: 280,
-                            child: Text(
-                              task.title,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w500,
-                                color: Color(0xFF1F2937),
+                            child: InkWell(
+                              onTap: () => _showEditTaskDialog(context, task, fieldId),
+                              child: Text(
+                                task.title,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
+                                  color: Color(0xFF1F2937),
+                                  decoration: TextDecoration.underline,
+                                  decorationColor: Color(0xFFE5E7EB),
+                                ),
                               ),
                             ),
                           ),

@@ -52,9 +52,11 @@ class BoostCubit extends Cubit<BoostState> {
         credits: creditsRemaining,
       ));
     } catch (e) {
+      // ignore: avoid_print
+      print('[BoostCubit] Error: $e');
       final msg = e.toString().contains('no_credits')
           ? 'You\'ve used all your boost credits.'
-          : 'Something went wrong. Please try again.';
+          : 'Boost error: $e';
       emit(state.copyWith(
         status: BoostStatus.error,
         errorMessage: msg,

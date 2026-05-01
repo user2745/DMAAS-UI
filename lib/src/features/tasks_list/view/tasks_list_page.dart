@@ -202,6 +202,11 @@ class _TasksListPageState extends State<TasksListPage> {
                                   .read<TasksListCubit>()
                                   .reorderTasks(oldIndex, newIndex);
                             },
+                            onFieldReorder: (oldIndex, newIndex) {
+                              context
+                                  .read<TasksListCubit>()
+                                  .reorderFields(oldIndex, newIndex);
+                            },
                           );
                         } else if (state.viewMode == TaskViewMode.calendar) {
                           viewBody = CalendarView(

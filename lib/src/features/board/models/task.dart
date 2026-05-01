@@ -87,6 +87,7 @@ class Task extends Equatable {
     this.fieldValues,
     this.categoryId,
     this.comments = const [],
+    this.ticketNumber,
   });
 
   final String id;
@@ -103,6 +104,7 @@ class Task extends Equatable {
   final Map<String, dynamic>? fieldValues;
   final String? categoryId;
   final List<TaskComment> comments;
+  final int? ticketNumber;
 
   factory Task.fromJson(Map<String, dynamic> json) {
     return Task(
@@ -129,6 +131,7 @@ class Task extends Equatable {
               .map((c) => TaskComment.fromJson(c as Map<String, dynamic>))
               .toList()
           : const [],
+      ticketNumber: (json['ticketNumber'] as num?)?.toInt(),
     );
   }
 
@@ -143,6 +146,7 @@ class Task extends Equatable {
       if (estimatedDays != null) 'estimatedDays': estimatedDays,
       if (fieldValues != null) 'fieldValues': fieldValues,
       if (categoryId != null) 'categoryId': categoryId,
+      if (ticketNumber != null) 'ticketNumber': ticketNumber,
     };
   }
 
@@ -159,6 +163,7 @@ class Task extends Equatable {
     Map<String, dynamic>? fieldValues,
     String? categoryId,
     List<TaskComment>? comments,
+    Object? ticketNumber = _sentinel,
   }) {
     return Task(
       id: id ?? this.id,
@@ -177,6 +182,9 @@ class Task extends Equatable {
       fieldValues: fieldValues ?? this.fieldValues,
       categoryId: categoryId ?? this.categoryId,
       comments: comments ?? this.comments,
+      ticketNumber: ticketNumber == _sentinel
+          ? this.ticketNumber
+          : ticketNumber as int?,
     );
   }
 
@@ -194,6 +202,7 @@ class Task extends Equatable {
     fieldValues,
     categoryId,
     comments,
+    ticketNumber,
   ];
 }
 

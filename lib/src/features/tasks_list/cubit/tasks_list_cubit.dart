@@ -709,6 +709,17 @@ class TasksListCubit extends Cubit<TasksListState> {
     }
   }
 
+  Future<void> reorderFields(int oldIndex, int newIndex) async {
+    var targetIndex = newIndex;
+    if (newIndex > oldIndex) targetIndex -= 1;
+
+    final updatedFields = List<Field>.from(state.fields);
+    final movedField = updatedFields.removeAt(oldIndex);
+    updatedFields.insert(targetIndex, movedField);
+
+    emit(state.copyWith(fields: updatedFields));
+  }
+
   void assignUser({required String taskId, required Assignee assignee}) {
     final updated = Map<String, List<Assignee>>.from(state.taskAssigneesById);
     final current = List<Assignee>.from(updated[taskId] ?? const []);
