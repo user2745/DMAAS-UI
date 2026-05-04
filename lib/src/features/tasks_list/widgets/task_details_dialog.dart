@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 
 import '../../board/models/task.dart';
 import '../../board/models/task_comment.dart';
+import '../../../widgets/animated_focus_text_field.dart';
 
 // Design Language: Motion-first, polished dialog with smooth animations
 // See DESIGN_LANGUAGE.md for complete spec
@@ -475,21 +476,12 @@ class _TaskDetailsDialogState extends State<TaskDetailsDialog>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          TextField(
+          AnimatedFocusTextField(
             controller: _commentController,
-            decoration: InputDecoration(
-              hintText: 'Add a comment...',
-              border: InputBorder.none,
-              contentPadding: const EdgeInsets.all(12),
-              hintStyle: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurface.withOpacity(0.5),
-              ),
-            ),
+            hintText: 'Add a comment...',
             maxLines: null,
             minLines: 2,
-            enabled: !_isAddingComment,
             textCapitalization: TextCapitalization.sentences,
-            style: theme.textTheme.bodySmall,
           ),
           Padding(
             padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),

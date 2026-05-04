@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../cubit/auth_cubit.dart';
 import '../cubit/auth_state.dart';
+import '../../../widgets/animated_focus_text_field.dart';
+
+// Design Language: High-contrast dark theme with consistent input animations
+// See DESIGN_LANGUAGE.md for color and typography specifications
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -137,37 +141,12 @@ class _LoginPageState extends State<LoginPage> {
                       const SizedBox(height: 40),
 
                       // Email Field
-                      TextFormField(
+                      AnimatedFocusTextField(
                         controller: _emailController,
                         keyboardType: TextInputType.emailAddress,
-                        style: const TextStyle(color: Color(0xFFC9D1D9)),
-                        decoration: InputDecoration(
-                          labelText: 'Email',
-                          labelStyle: const TextStyle(color: Color(0xFF8B949E)),
-                          filled: true,
-                          fillColor: const Color(0xFF21262D),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(
-                              color: Color(0xFF30363D),
-                              width: 1,
-                            ),
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(
-                              color: Color(0xFF30363D),
-                              width: 1,
-                            ),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(
-                              color: Color(0xFF58A6FF),
-                              width: 2,
-                            ),
-                          ),
-                        ),
+                        labelText: 'Email',
+                        filled: true,
+                        fillColor: const Color(0xFF21262D),
                         validator: (value) {
                           if (value == null || value.isEmpty) {
                             return 'Please enter your email';
@@ -182,45 +161,20 @@ class _LoginPageState extends State<LoginPage> {
 
                       // Password Field (hidden for forgot password)
                       if (!_showForgotPassword) ...[
-                        TextFormField(
+                        AnimatedFocusTextField(
                           controller: _passwordController,
                           obscureText: !_isPasswordVisible,
-                          style: const TextStyle(color: Color(0xFFC9D1D9)),
-                          decoration: InputDecoration(
-                            labelText: 'Password',
-                            labelStyle: const TextStyle(color: Color(0xFF8B949E)),
-                            filled: true,
-                            fillColor: const Color(0xFF21262D),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: const BorderSide(
-                                color: Color(0xFF30363D),
-                                width: 1,
-                              ),
+                          labelText: 'Password',
+                          filled: true,
+                          fillColor: const Color(0xFF21262D),
+                          suffixIcon: IconButton(
+                            icon: Icon(
+                              _isPasswordVisible ? Icons.visibility : Icons.visibility_off,
+                              color: const Color(0xFF8B949E),
                             ),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: const BorderSide(
-                                color: Color(0xFF30363D),
-                                width: 1,
-                              ),
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: const BorderSide(
-                                color: Color(0xFF58A6FF),
-                                width: 2,
-                              ),
-                            ),
-                            suffixIcon: IconButton(
-                              icon: Icon(
-                                _isPasswordVisible ? Icons.visibility : Icons.visibility_off,
-                                color: const Color(0xFF8B949E),
-                              ),
-                              onPressed: () {
-                                setState(() => _isPasswordVisible = !_isPasswordVisible);
-                              },
-                            ),
+                            onPressed: () {
+                              setState(() => _isPasswordVisible = !_isPasswordVisible);
+                            },
                           ),
                           validator: (value) {
                             if (value == null || value.isEmpty) {
@@ -237,49 +191,24 @@ class _LoginPageState extends State<LoginPage> {
 
                       // Confirm Password Field (only for sign up)
                       if (_isSignUp && !_showForgotPassword) ...[
-                        TextFormField(
+                        AnimatedFocusTextField(
                           controller: _confirmPasswordController,
                           obscureText: !_isConfirmPasswordVisible,
-                          style: const TextStyle(color: Color(0xFFC9D1D9)),
-                          decoration: InputDecoration(
-                            labelText: 'Confirm Password',
-                            labelStyle: const TextStyle(color: Color(0xFF8B949E)),
-                            filled: true,
-                            fillColor: const Color(0xFF21262D),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: const BorderSide(
-                                color: Color(0xFF30363D),
-                                width: 1,
-                              ),
+                          labelText: 'Confirm Password',
+                          filled: true,
+                          fillColor: const Color(0xFF21262D),
+                          suffixIcon: IconButton(
+                            icon: Icon(
+                              _isConfirmPasswordVisible
+                                  ? Icons.visibility
+                                  : Icons.visibility_off,
+                              color: const Color(0xFF8B949E),
                             ),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: const BorderSide(
-                                color: Color(0xFF30363D),
-                                width: 1,
-                              ),
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: const BorderSide(
-                                color: Color(0xFF58A6FF),
-                                width: 2,
-                              ),
-                            ),
-                            suffixIcon: IconButton(
-                              icon: Icon(
-                                _isConfirmPasswordVisible
-                                    ? Icons.visibility
-                                    : Icons.visibility_off,
-                                color: const Color(0xFF8B949E),
-                              ),
-                              onPressed: () {
-                                setState(
-                                  () => _isConfirmPasswordVisible = !_isConfirmPasswordVisible,
-                                );
-                              },
-                            ),
+                            onPressed: () {
+                              setState(
+                                () => _isConfirmPasswordVisible = !_isConfirmPasswordVisible,
+                              );
+                            },
                           ),
                           validator: (value) {
                             if (value == null || value.isEmpty) {

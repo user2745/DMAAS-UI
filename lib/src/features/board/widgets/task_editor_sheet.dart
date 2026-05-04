@@ -154,16 +154,9 @@ class _TaskEditorSheetState extends State<TaskEditorSheet> {
                       ),
                     ),
                     const SizedBox(height: 8),
-                    TextFormField(
+                    AnimatedFocusTextField(
                       controller: _titleController,
-                      decoration: InputDecoration(
-                        hintText: 'Add a task title...',
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                      ),
-                      style: theme.textTheme.bodyMedium,
+                      hintText: 'Add a task title...',
                       validator: (value) {
                         if (value == null || value.trim().isEmpty) {
                           return 'Please add a title';
@@ -186,17 +179,10 @@ class _TaskEditorSheetState extends State<TaskEditorSheet> {
                       ),
                     ),
                     const SizedBox(height: 8),
-                    TextFormField(
+                    AnimatedFocusTextField(
                       controller: _descriptionController,
-                      decoration: InputDecoration(
-                        hintText: 'Add details...',
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                      ),
+                      hintText: 'Add details...',
                       maxLines: 3,
-                      style: theme.textTheme.bodySmall,
                     ),
                   ],
                 ),

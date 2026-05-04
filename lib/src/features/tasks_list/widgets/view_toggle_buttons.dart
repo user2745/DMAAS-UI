@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-
 import '../cubit/tasks_list_cubit.dart';
+import '../../../widgets/animated_button_wrapper.dart';
 
 class ViewToggleButtons extends StatelessWidget {
   const ViewToggleButtons({
@@ -59,23 +59,25 @@ class ViewToggleButtons extends StatelessWidget {
 
     return Tooltip(
       message: label,
-      child: TextButton.icon(
-        onPressed: () => onModeSelected(mode),
-        icon: Icon(icon, size: 16, color: textColor),
-        label: Text(
-          label,
-          style: TextStyle(
-            color: textColor,
-            fontWeight: FontWeight.w600,
-            fontSize: 12,
+      child: AnimatedButtonWrapper(
+        child: TextButton.icon(
+          onPressed: () => onModeSelected(mode),
+          icon: Icon(icon, size: 16, color: textColor),
+          label: Text(
+            label,
+            style: TextStyle(
+              color: textColor,
+              fontWeight: FontWeight.w600,
+              fontSize: 12,
+            ),
           ),
-        ),
-        style: TextButton.styleFrom(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-          backgroundColor: backgroundColor,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-            side: BorderSide(color: borderColor),
+          style: TextButton.styleFrom(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+            backgroundColor: backgroundColor,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+              side: BorderSide(color: borderColor),
+            ),
           ),
         ),
       ),

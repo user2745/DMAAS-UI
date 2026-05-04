@@ -11,6 +11,8 @@ import '../widgets/task_column_new.dart';
 import '../widgets/task_editor_sheet.dart';
 import '../widgets/search_bar_widget.dart';
 
+// Design Language: Kanban board with smooth column animations and responsive layout
+// See DESIGN_LANGUAGE.md for spacing, motion, and shadow specifications
 class TaskBoardPage extends StatefulWidget {
   const TaskBoardPage({super.key});
 

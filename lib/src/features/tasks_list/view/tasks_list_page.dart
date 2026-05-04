@@ -14,6 +14,8 @@ import '../widgets/task_list_table.dart';
 import '../widgets/view_toggle_buttons.dart';
 import '../../../widgets/animated_focus_text_field.dart';
 
+// Design Language: Multi-view list/calendar/roadmap with fluid transitions
+// See DESIGN_LANGUAGE.md for animation timings and layout rules
 class TasksListPage extends StatefulWidget {
   const TasksListPage({super.key});
 
