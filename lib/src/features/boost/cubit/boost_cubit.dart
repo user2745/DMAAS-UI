@@ -67,4 +67,14 @@ class BoostCubit extends Cubit<BoostState> {
   void reset() {
     emit(state.clearResult());
   }
+
+  Future<void> purchaseCredits(int amount) async {
+    try {
+      final newAmount = await _service.addCredits(amount);
+      emit(state.copyWith(credits: newAmount));
+    } catch (e) {
+      // ignore: avoid_print
+      print('[BoostCubit] Purchase Error: $e');
+    }
+  }
 }

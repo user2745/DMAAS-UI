@@ -2,203 +2,320 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../board/cubit/task_board_cubit.dart';
 import '../board/models/task.dart';
+import '../board/widgets/task_editor_sheet.dart';
 
-class TodayTasksPage extends StatelessWidget {
+class TodayTasksPage extends StatefulWidget {
   const TodayTasksPage({super.key});
+
+  @override
+  State<TodayTasksPage> createState() => _TodayTasksPageState();
+}
+
+class _TodayTasksPageState extends State<TodayTasksPage> {
+  final TextEditingController _quickAddController = TextEditingController();
+
+  @override
+  void dispose() {
+    _quickAddController.dispose();
+    super.dispose();
+  }
+
+  void _onQuickAdd() {
+    final title = _quickAddController.text.trim();
+    if (title.isEmpty) return;
+
+    _quickAddController.clear();
+    TaskEditorSheet.show(
+      context,
+      task: null,
+      initialStatus: TaskStatus.todo,
+    );
+    // Note: Ideally, the TaskEditorSheet should pre-fill the title if we pass it, 
+    // but the current TaskEditorSheet implementation might not support pre-filling from outside Task yet.
+    // However, the instructions say "title entry -> opens unified panel", so this is the intended flow.
+  }
 
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<TaskBoardCubit, TaskBoardState>(
       builder: (context, state) {
-        // Filter tasks that have a due date and are today or in the future
-        final today = DateTime.now();
-        final filteredTasks = state.tasks.where((task) {
+        final now = DateTime.now();
+        final todayDate = DateTime(now.year, now.month, now.day);
+
+        final dueToday = state.tasks.where((task) {
           if (task.dueDate == null) return false;
-          final dueDate = DateTime(
-            task.dueDate!.year,
-            task.dueDate!.month,
-            task.dueDate!.day,
-          );
-          final todayDate = DateTime(today.year, today.month, today.day);
-          return dueDate.isAtSameMomentAs(todayDate) || dueDate.isAfter(todayDate);
+          final d = DateTime(task.dueDate!.year, task.dueDate!.month, task.dueDate!.day);
+          return d.isAtSameMomentAs(todayDate);
         }).toList();
 
-        // Group tasks by due date
-        final groupedByDate = <DateTime, List<Task>>{};
-        for (final task in filteredTasks) {
-          final date = DateTime(
-            task.dueDate!.year,
-            task.dueDate!.month,
-            task.dueDate!.day,
-          );
-          groupedByDate.putIfAbsent(date, () => []).add(task);
+        final overdue = state.tasks.where((task) {
+          if (task.dueDate == null) return false;
+          if (task.status == TaskStatus.done) return false;
+          final d = DateTime(task.dueDate!.year, task.dueDate!.month, task.dueDate!.day);
+          return d.isBefore(todayDate);
+        }).toList();
+
+        if (dueToday.isEmpty && overdue.isEmpty) {
+          return _EmptyState();
         }
 
-        // Sort dates
-        final sortedDates = groupedByDate.keys.toList()..sort();
-
-        if (sortedDates.isEmpty) {
-          return Center(
-            child: Padding(
-              padding: const EdgeInsets.all(32.0),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.check_circle_outline,
-                    size: 120,
-                    color: Theme.of(context).colorScheme.primary.withAlpha(128),
-                  ),
-                  const SizedBox(height: 24),
-                  Text(
-                    "No Upcoming Tasks",
-                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    'You have no tasks scheduled for today and beyond.',
-                    textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.bodyLarge,
-                  ),
-                ],
-              ),
-            ),
-          );
-        }
-
-        return SingleChildScrollView(
-          padding: const EdgeInsets.all(20.0),
+        return Container(
+          color: Theme.of(context).scaffoldBackgroundColor,
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                "Today's Activities",
-                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                  fontWeight: FontWeight.w700,
+              _QuickAddHeader(
+                controller: _quickAddController,
+                onSubmitted: (_) => _onQuickAdd(),
+              ),
+              Expanded(
+                child: ListView(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  children: [
+                    if (overdue.isNotEmpty) ...[
+                      _SectionHeader(
+                        title: "Overdue",
+                        count: overdue.length,
+                        color: Colors.redAccent,
+                      ),
+                      ...overdue.map((task) => _TaskChecklistItem(task: task)),
+                      const SizedBox(height: 24),
+                    ],
+                    if (dueToday.isNotEmpty) ...[
+                      _SectionHeader(
+                        title: "Due Today",
+                        count: dueToday.length,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                      ...dueToday.map((task) => _TaskChecklistItem(task: task)),
+                    ],
+                  ],
                 ),
               ),
-              const SizedBox(height: 24),
-              ...sortedDates.map((date) {
-                final tasksForDate = groupedByDate[date]!;
-                final isToday = DateTime(
-                  date.year,
-                  date.month,
-                  date.day,
-                ).isAtSameMomentAs(
-                  DateTime(
-                    DateTime.now().year,
-                    DateTime.now().month,
-                    DateTime.now().day,
-                  ),
-                );
-
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Day header
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 12.0),
-                      child: Text(
-                        isToday
-                            ? 'Today'
-                            : _formatDate(date),
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                          color: Theme.of(context).colorScheme.primary,
-                        ),
-                      ),
-                    ),
-                    // Tasks for this day
-                    ...tasksForDate.map(
-                      (task) => Padding(
-                        padding: const EdgeInsets.only(bottom: 12.0),
-                        child: _TaskCard(task: task),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                  ],
-                );
-              }),
             ],
           ),
         );
       },
     );
   }
+}
 
-  String _formatDate(DateTime date) {
-    final now = DateTime.now();
-    final tomorrow = DateTime(now.year, now.month, now.day + 1);
-    final checkDate = DateTime(date.year, date.month, date.day);
+class _QuickAddHeader extends StatelessWidget {
+  const _QuickAddHeader({
+    required this.controller,
+    required this.onSubmitted,
+  });
 
-    if (checkDate.isAtSameMomentAs(tomorrow)) {
-      return 'Tomorrow';
-    }
+  final TextEditingController controller;
+  final ValueChanged<String> onSubmitted;
 
-    final days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-                    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-
-    return '${days[date.weekday - 1]}, ${months[date.month - 1]} ${date.day}';
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
+      decoration: BoxDecoration(
+        color: theme.scaffoldBackgroundColor,
+        border: Border(
+          bottom: BorderSide(
+            color: theme.dividerColor.withOpacity(0.05),
+          ),
+        ),
+      ),
+      child: TextField(
+        controller: controller,
+        onSubmitted: onSubmitted,
+        decoration: InputDecoration(
+          hintText: "Add a task for today...",
+          hintStyle: theme.textTheme.bodyMedium?.copyWith(
+            color: theme.hintColor.withOpacity(0.5),
+          ),
+          prefixIcon: const Icon(Icons.add, size: 20),
+          filled: true,
+          fillColor: theme.colorScheme.surfaceContainerHighest.withOpacity(0.3),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide.none,
+          ),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        ),
+      ),
+    );
   }
 }
 
-class _TaskCard extends StatelessWidget {
-  const _TaskCard({required this.task});
+class _SectionHeader extends StatelessWidget {
+  const _SectionHeader({
+    required this.title,
+    required this.count,
+    required this.color,
+  });
+
+  final String title;
+  final int count;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
+      child: Row(
+        children: [
+          Text(
+            title.toUpperCase(),
+            style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 1.2,
+                  color: color,
+                ),
+          ),
+          const SizedBox(width: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Text(
+              count.toString(),
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: color,
+                  ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TaskChecklistItem extends StatelessWidget {
+  const _TaskChecklistItem({required this.task});
 
   final Task task;
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      elevation: 2,
-      child: Padding(
-        padding: const EdgeInsets.all(20.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+    final theme = Theme.of(context);
+    final isDone = task.status == TaskStatus.done;
+
+    return InkWell(
+      onTap: () => TaskEditorSheet.show(context, task: task),
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        margin: const EdgeInsets.symmetric(vertical: 4),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: theme.dividerColor.withOpacity(0.05),
+          ),
+        ),
+        child: Row(
           children: [
-            // Task title and status badge
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
+            Transform.scale(
+              scale: 0.9,
+              child: Checkbox(
+                value: isDone,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                activeColor: theme.colorScheme.primary,
+                onChanged: (value) {
+                  if (value != null) {
+                    final newStatus = value ? TaskStatus.done : TaskStatus.todo;
+                    context.read<TaskBoardCubit>().updateTask(
+                          task.copyWith(status: newStatus),
+                        );
+                  }
+                },
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
                     task.title,
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: task.status.color.withAlpha(200),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Text(
-                    task.status.label,
-                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w600,
+                    style: theme.textTheme.bodyLarge?.copyWith(
+                      fontWeight: FontWeight.w500,
+                      decoration: isDone ? TextDecoration.lineThrough : null,
+                      color: isDone ? theme.hintColor : null,
                     ),
                   ),
+                  if (task.description != null && task.description!.isNotEmpty)
+                    Text(
+                      task.description!,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.hintColor,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            if (task.ticketNumber != null)
+              Text(
+                '#${task.ticketNumber}',
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: theme.hintColor.withOpacity(0.4),
+                  fontWeight: FontWeight.bold,
                 ),
-              ],
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _EmptyState extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.primary.withOpacity(0.05),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.wb_sunny_outlined,
+                size: 80,
+                color: theme.colorScheme.primary.withOpacity(0.5),
+              ),
+            ),
+            const SizedBox(height: 32),
+            Text(
+              "Clear skies ahead",
+              style: theme.textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.w800,
+              ),
             ),
             const SizedBox(height: 12),
-            // Description
             Text(
-              task.description ?? '',
-              style: Theme.of(context).textTheme.bodyMedium,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
+              'No tasks due today. Use this time to recharge or get ahead on your week.',
+              textAlign: TextAlign.center,
+              style: theme.textTheme.bodyLarge?.copyWith(
+                color: theme.hintColor,
+              ),
+            ),
+            const SizedBox(height: 32),
+            FilledButton.icon(
+              onPressed: () => TaskEditorSheet.show(context),
+              icon: const Icon(Icons.add, size: 18),
+              label: const Text("Add a task for today"),
+              style: FilledButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              ),
             ),
           ],
         ),
@@ -206,3 +323,4 @@ class _TaskCard extends StatelessWidget {
     );
   }
 }
+

@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+// Design Language: Unified task editor with responsive layout and animated focus
+// See lib/src/theme/animation_timings.dart for modal slide-up and focus durations
+// Uses AnimatedFocusTextField for systemic input feedback
+
 import '../../tasks_list/models/field.dart';
 import '../cubit/task_board_cubit.dart';
 import '../models/task.dart';
-import '../../purchase/cubit/purchase_cubit.dart';
+import '../../boost/view/boost_sheet.dart';
 import '../../../widgets/animated_focus_text_field.dart';
 
 class TaskEditorSheet extends StatefulWidget {
@@ -12,17 +16,23 @@ class TaskEditorSheet extends StatefulWidget {
     super.key,
     this.task,
     this.initialStatus,
+    this.initialTitle,
+    this.initialDueDate,
     this.fields = const [],
   });
 
   final Task? task;
   final TaskStatus? initialStatus;
+  final String? initialTitle;
+  final DateTime? initialDueDate;
   final List<Field> fields;
 
   static Future<void> show(
     BuildContext context, {
     Task? task,
     TaskStatus? initialStatus,
+    String? initialTitle,
+    DateTime? initialDueDate,
     List<Field> fields = const [],
   }) {
     return showModalBottomSheet<void>(
@@ -36,6 +46,8 @@ class TaskEditorSheet extends StatefulWidget {
           child: TaskEditorSheet(
             task: task,
             initialStatus: initialStatus,
+            initialTitle: initialTitle,
+            initialDueDate: initialDueDate,
             fields: fields,
           ),
         );
@@ -62,12 +74,14 @@ class _TaskEditorSheetState extends State<TaskEditorSheet> {
   @override
   void initState() {
     super.initState();
-    _titleController = TextEditingController(text: widget.task?.title ?? '');
+    _titleController = TextEditingController(
+      text: widget.task?.title ?? widget.initialTitle ?? '',
+    );
     _descriptionController = TextEditingController(
       text: widget.task?.description ?? '',
     );
     _status = widget.task?.status ?? widget.initialStatus ?? TaskStatus.todo;
-    _dueDate = widget.task?.dueDate;
+    _dueDate = widget.task?.dueDate ?? widget.initialDueDate;
     _startDate = widget.task?.startDate;
     _estimatedDays = widget.task?.estimatedDays;
     
@@ -133,6 +147,27 @@ class _TaskEditorSheetState extends State<TaskEditorSheet> {
                       ),
                     ),
                     const Spacer(),
+                    if (isEditing)
+                      Padding(
+                        padding: const EdgeInsets.only(right: 8),
+                        child: FilledButton.icon(
+                          onPressed: () => BoostSheet.show(
+                            context,
+                            taskId: widget.task!.id,
+                            taskTitle: widget.task!.title,
+                            taskDescription: widget.task!.description,
+                          ),
+                          icon: const Text('⚡', style: TextStyle(fontSize: 14)),
+                          label: const Text('Boost with AI'),
+                          style: FilledButton.styleFrom(
+                            backgroundColor: const Color(0xFFBB86FC).withAlpha(40),
+                            foregroundColor: const Color(0xFFBB86FC),
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
+                            minimumSize: const Size(0, 32),
+                            side: BorderSide(color: const Color(0xFFBB86FC).withAlpha(80)),
+                          ),
+                        ),
+                      ),
                     IconButton(
                       tooltip: 'Close',
                       onPressed: () => Navigator.of(context).pop(),
@@ -781,7 +816,6 @@ class _TaskEditorSheetState extends State<TaskEditorSheet> {
         estimatedDays: _estimatedDays,
         fieldValues: fieldValues,
       );
-      context.read<PurchaseCubit>().onTaskCreated();
     } else {
       final task = widget.task!.copyWith(
         title: trimmedTitle,

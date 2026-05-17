@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 
+// Design Language: Animated Kanban column with drag-and-drop feedback
+// See lib/src/theme/animation_timings.dart for column collapse and drop durations
+// Uses systemic card spacing (12px) and container border radii (16px)
+
 import '../../tasks_list/models/field.dart';
 import '../models/task.dart';
 import '../utils/drop_position_calculator.dart';
@@ -157,7 +161,7 @@ class _TaskColumnState extends State<TaskColumn> {
               const SizedBox(height: 8),
               Flexible(
                 child: widget.tasks.isEmpty
-                    ? _EmptyColumn(status: widget.status)
+                    ? _EmptyColumn(status: widget.status, onAdd: widget.onAdd)
                     : DragGateWidget(
                         child: RawScrollbar(
                           thickness: 4,
@@ -384,9 +388,10 @@ class _TaskColumnState extends State<TaskColumn> {
 }
 
 class _EmptyColumn extends StatelessWidget {
-  const _EmptyColumn({required this.status});
+  const _EmptyColumn({required this.status, required this.onAdd});
 
   final TaskStatus status;
+  final VoidCallback onAdd;
 
   @override
   Widget build(BuildContext context) {
@@ -430,6 +435,22 @@ class _EmptyColumn extends StatelessWidget {
                 fontSize: 11,
               ),
               textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton.icon(
+              onPressed: onAdd,
+              icon: const Icon(Icons.add, size: 18),
+              label: const Text('Add Task'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: status.color.withAlpha(40),
+                foregroundColor: status.color,
+                elevation: 0,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  side: BorderSide(color: status.color.withAlpha(80)),
+                ),
+              ),
             ),
           ],
         ),

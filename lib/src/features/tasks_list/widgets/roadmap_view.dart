@@ -69,9 +69,57 @@ class _RoadmapViewState extends State<RoadmapView> {
         final allTasks = grouped.values.expand((t) => t).toList();
 
         if (allTasks.isEmpty) {
-          return const Center(
-            child: Text('No tasks yet',
-                style: TextStyle(color: Color(0xFF8B949E))),
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.map_outlined,
+                  size: 64,
+                  color: const Color(0xFF8B949E).withAlpha(100),
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  'No tasks in roadmap',
+                  style: TextStyle(
+                    color: Color(0xFFE6EDF3),
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Plan your project timeline by adding tasks',
+                  style: TextStyle(
+                    color: Color(0xFF8B949E),
+                    fontSize: 14,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                ElevatedButton.icon(
+                  onPressed: widget.onAddTaskAtDate != null
+                      ? () => widget.onAddTaskAtDate!(DateTime.now())
+                      : null,
+                  icon: const Icon(Icons.add),
+                  label: const Text('Add Task'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Theme.of(context).colorScheme.primary.withAlpha(40),
+                    foregroundColor: Theme.of(context).colorScheme.primary,
+                    elevation: 0,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 12,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      side: BorderSide(
+                        color: Theme.of(context).colorScheme.primary.withAlpha(80),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           );
         }
 

@@ -1,10 +1,11 @@
 const { onRequest } = require("firebase-functions/v2/https");
+const { defineSecret } = require("firebase-functions/params");
 const fetch = require("node-fetch");
 
-const DEEPSEEK_API_KEY = "sk-dd93a332c5344496aa2c9bd767412035";
+const deepseekApiKey = defineSecret("DEEPSEEK_API_KEY");
 
 exports.boostProxy = onRequest(
-  { invoker: "public", cors: true },
+  { invoker: "public", cors: true, secrets: [deepseekApiKey] },
   async (req, res) => {
     res.set("Access-Control-Allow-Origin", "*");
     res.set("Access-Control-Allow-Methods", "POST, OPTIONS");
@@ -19,10 +20,11 @@ exports.boostProxy = onRequest(
     }
 
     try {
+      const apiKey = process.env.DEEPSEEK_API_KEY || deepseekApiKey.value();
       const response = await fetch("https://api.deepseek.com/chat/completions", {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${DEEPSEEK_API_KEY}`,
+          Authorization: `Bearer ${apiKey}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify(req.body),

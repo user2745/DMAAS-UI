@@ -10,7 +10,7 @@ class TaskListApiService {
   TaskListApiService({
     this.baseUrl = const String.fromEnvironment(
       'API_BASE_URL',
-      defaultValue: 'https://74-208-213-94.nip.io',
+      defaultValue: 'https://dmaas.capitalintelligence.online',
     ),
     http.Client? httpClient,
   }) : httpClient = httpClient ?? http.Client();

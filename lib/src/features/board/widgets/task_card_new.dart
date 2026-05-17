@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+// Design Language: Compact task card with status accents and micro-interactions
+// See lib/src/theme/animation_timings.dart for hover and elevation timings
+// See lib/src/theme/opacity_tiers.dart for visual hierarchy tokens
+
 import '../../tasks_list/models/field.dart';
 import '../models/task.dart';
-import 'task_detail_modal.dart';
+import 'task_editor_sheet.dart';
 import '../../../widgets/micro_interactions/status_momentum.dart';
 import '../../../widgets/micro_interactions/fade_delete_card.dart';
 import '../../boost/view/boost_sheet.dart';
@@ -59,7 +63,11 @@ class _TaskCardState extends State<TaskCard> {
         ),
         childWhenDragging: const SizedBox.shrink(),
         child: GestureDetector(
-          onTap: () => TaskDetailModal.show(context, task: widget.task),
+          onTap: () => TaskEditorSheet.show(
+            context,
+            task: widget.task,
+            fields: widget.fields,
+          ),
           child: MouseRegion(
             onEnter: (_) => setState(() => _isHovered = true),
             onExit: (_) => setState(() => _isHovered = false),
@@ -135,6 +143,20 @@ class _TaskCardState extends State<TaskCard> {
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
+                          if (_isHovered && !isDragging)
+                            IconButton(
+                              onPressed: () => BoostSheet.show(
+                                context,
+                                taskId: widget.task.id,
+                                taskTitle: widget.task.title,
+                                taskDescription: widget.task.description,
+                              ),
+                              icon: const Text('⚡', style: TextStyle(fontSize: 16)),
+                              tooltip: 'Boost',
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                              visualDensity: VisualDensity.compact,
+                            ),
                           _buildActionMenu(context),
                         ],
                       ),

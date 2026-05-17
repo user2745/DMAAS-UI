@@ -2,7 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 
+// Design Language: Dark-themed data table with sticky headers and inline editing
+// See lib/src/theme/app_theme.dart for table row and container backgrounds
+// Uses systemic spacing and hover feedback for desktop/touch parity
+
 import '../../board/models/task.dart';
+import '../../board/widgets/task_editor_sheet.dart';
 import '../cubit/tasks_list_cubit.dart';
 import '../models/field.dart';
 import '../widgets/field_widgets.dart';
@@ -166,9 +171,9 @@ class _TaskListTableState extends State<TaskListTable> {
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: const Color(0xFF0D1117),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.grey[300]!, width: 1),
+        border: Border.all(color: const Color(0xFF30363D), width: 1),
       ),
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
@@ -210,6 +215,13 @@ class _TaskListTableState extends State<TaskListTable> {
                       onTap: () => widget.onSortChanged(TaskSortKey.dueDate),
                     ),
                     _headerCell(label: 'Actions', width: 100),
+                    // Visual distinction for custom fields
+                    Container(
+                      width: 1,
+                      height: 24,
+                      margin: const EdgeInsets.symmetric(horizontal: 8),
+                      color: const Color(0xFF30363D),
+                    ),
                     ...widget.fields.asMap().entries.map((entry) {
                       final fieldIndex = entry.key;
                       final field = entry.value;
@@ -344,12 +356,11 @@ class _TaskListTableState extends State<TaskListTable> {
                   ],
                 ),
               ),
-              const Divider(height: 1, color: Color(0xFFE5E7EB)),
-              ReorderableListView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                buildDefaultDragHandles: false,
-                onReorder: widget.onReorder,
+              const Divider(height: 1, color: Color(0xFF30363D)),
+              Expanded(
+                child: ReorderableListView.builder(
+                  buildDefaultDragHandles: false,
+                  onReorder: widget.onReorder,
                 itemCount: widget.tasks.length,
                 itemBuilder: (context, index) {
                   final task = widget.tasks[index];
@@ -363,9 +374,9 @@ class _TaskListTableState extends State<TaskListTable> {
                     onExit: (_) => setState(() => _hoveredRowIndex = null),
                     child: Container(
                       decoration: BoxDecoration(
-                        color: isHovered ? const Color(0xFFFAFAFA) : Colors.white,
+                        color: isHovered ? const Color(0xFF161B22) : const Color(0xFF0D1117),
                         border: const Border(
-                          bottom: BorderSide(color: Color(0xFFE5E7EB), width: 1),
+                          bottom: BorderSide(color: Color(0xFF21262D), width: 1),
                         ),
                       ),
                       padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
@@ -381,14 +392,14 @@ class _TaskListTableState extends State<TaskListTable> {
                                   child: Icon(
                                     Icons.drag_indicator,
                                     size: 18,
-                                    color: Colors.grey[500],
+                                    color: const Color(0xFF484F58),
                                   ),
                                 ),
                                 const SizedBox(width: 4),
                                 Expanded(
                                   child: Text(
                                     task.ticketNumber != null ? 'T-${task.ticketNumber}' : 'T-${index + 1}',
-                                    style: TextStyle(color: Colors.grey[500], fontSize: 13),
+                                    style: const TextStyle(color: Color(0xFF8B949E), fontSize: 13),
                                     overflow: TextOverflow.ellipsis,
                                   ),
                                 ),
@@ -406,9 +417,9 @@ class _TaskListTableState extends State<TaskListTable> {
                                 style: const TextStyle(
                                   fontSize: 14,
                                   fontWeight: FontWeight.w500,
-                                  color: Color(0xFF1F2937),
+                                  color: Color(0xFFE6EDF3),
                                   decoration: TextDecoration.underline,
-                                  decorationColor: Color(0xFFE5E7EB),
+                                  decorationColor: Color(0xFF30363D),
                                 ),
                               ),
                             ),
@@ -417,12 +428,7 @@ class _TaskListTableState extends State<TaskListTable> {
                             width: 150,
                             child: _AssigneesCell(
                               taskId: task.id,
-                              onAdd: () async {
-                                final assignee = await _promptAssignee(context);
-                                if (assignee != null) {
-                                  // Assignee assignment will be handled separately
-                                }
-                              },
+                              onAdd: () {},
                             ),
                           ),
                           SizedBox(
@@ -503,6 +509,10 @@ class _TaskListTableState extends State<TaskListTable> {
                                   horizontal: 8,
                                   vertical: 6,
                                 ),
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(4),
+                                  color: isHovered ? const Color(0xFF21262D) : Colors.transparent,
+                                ),
                                 child: Row(
                                   children: [
                                     Expanded(
@@ -510,14 +520,14 @@ class _TaskListTableState extends State<TaskListTable> {
                                         _formatDate(task.dueDate),
                                         style: const TextStyle(
                                           fontSize: 13,
-                                          color: Color(0xFF6B7280),
+                                          color: Color(0xFF8B949E),
                                         ),
                                       ),
                                     ),
                                     const Icon(
                                       Icons.calendar_today,
                                       size: 14,
-                                      color: Color(0xFF6B7280),
+                                      color: Color(0xFF8B949E),
                                     ),
                                   ],
                                 ),
@@ -529,50 +539,55 @@ class _TaskListTableState extends State<TaskListTable> {
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                if (isHovered)
-                                  Tooltip(
-                                    message: 'Edit',
-                                    child: SizedBox(
-                                      width: 32,
-                                      height: 32,
-                                      child: IconButton(
-                                        icon: Icon(
-                                          Icons.edit,
-                                          size: 16,
-                                          color: Colors.grey[700],
-                                        ),
-                                        padding: EdgeInsets.zero,
-                                        onPressed: () {
-                                          _showEditTaskDialog(
-                                            context,
-                                            task,
-                                            fieldId,
-                                          );
-                                        },
+                                Tooltip(
+                                  message: 'Edit',
+                                  child: SizedBox(
+                                    width: 32,
+                                    height: 32,
+                                    child: IconButton(
+                                      icon: const Icon(
+                                        Icons.edit,
+                                        size: 16,
+                                        color: Color(0xFF8B949E),
                                       ),
+                                      padding: EdgeInsets.zero,
+                                      onPressed: () {
+                                        _showEditTaskDialog(
+                                          context,
+                                          task,
+                                          fieldId,
+                                        );
+                                      },
                                     ),
                                   ),
-                                if (isHovered)
-                                  Tooltip(
-                                    message: 'Delete',
-                                    child: SizedBox(
-                                      width: 32,
-                                      height: 32,
-                                      child: IconButton(
-                                        icon: Icon(
-                                          Icons.delete,
-                                          size: 16,
-                                          color: Colors.grey[700],
-                                        ),
-                                        padding: EdgeInsets.zero,
-                                        onPressed: () {
-                                          _showDeleteConfirmation(context, task.id);
-                                        },
+                                ),
+                                Tooltip(
+                                  message: 'Delete',
+                                  child: SizedBox(
+                                    width: 32,
+                                    height: 32,
+                                    child: IconButton(
+                                      icon: const Icon(
+                                        Icons.delete,
+                                        size: 16,
+                                        color: Color(0xFF8B949E),
                                       ),
+                                      padding: EdgeInsets.zero,
+                                      onPressed: () {
+                                        _showDeleteConfirmation(context, task.id);
+                                      },
                                     ),
                                   ),
+                                ),
                               ],
                             ),
+                          ),
+                          // Row divider for custom fields
+                          Container(
+                            width: 1,
+                            height: 24,
+                            margin: const EdgeInsets.symmetric(horizontal: 8),
+                            color: const Color(0xFF30363D),
                           ),
                           ...widget.fields.map((field) {
                             final value =
@@ -594,20 +609,21 @@ class _TaskListTableState extends State<TaskListTable> {
                   );
                 },
               ),
-              _buildQuickAddRow(),
-            ],
-          ),
+            ),
+            _buildQuickAddRow(),
+          ],
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildQuickAddRow() {
     return Container(
       decoration: const BoxDecoration(
-        color: Colors.white,
+        color: Color(0xFF0D1117),
         border: Border(
-          top: BorderSide(color: Color(0xFFE5E7EB), width: 1),
+          top: BorderSide(color: Color(0xFF30363D), width: 1),
         ),
       ),
       padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 12),
@@ -617,7 +633,7 @@ class _TaskListTableState extends State<TaskListTable> {
             width: 48,
             child: Text(
               '${widget.tasks.length + 1}',
-              style: TextStyle(color: Colors.grey[400], fontSize: 13),
+              style: const TextStyle(color: Color(0xFF484F58), fontSize: 13),
             ),
           ),
           SizedBox(
@@ -629,11 +645,15 @@ class _TaskListTableState extends State<TaskListTable> {
                     onChanged: (_) => setState(() {}),
                     onSubmit: (title) {
                       if (title.isNotEmpty) {
-                        widget.onAddTask(title);
                         setState(() {
                           _isAddingTask = false;
                           _newTaskController.clear();
                         });
+                        TaskEditorSheet.show(
+                          context,
+                          initialTitle: title,
+                          fields: widget.fields,
+                        );
                       }
                     },
                     onCancel: () {
@@ -661,11 +681,11 @@ class _TaskListTableState extends State<TaskListTable> {
                       ),
                       decoration: BoxDecoration(
                         border: Border.all(
-                          color: Colors.grey[300]!,
+                          color: const Color(0xFF30363D),
                           width: 1,
                         ),
                         borderRadius: BorderRadius.circular(5),
-                        color: Colors.grey[50],
+                        color: const Color(0xFF161B22),
                       ),
                       child: Row(
                         children: [
@@ -677,8 +697,8 @@ class _TaskListTableState extends State<TaskListTable> {
                           const SizedBox(width: 8),
                           Text(
                             'Add new task...',
-                            style: TextStyle(
-                              color: Colors.grey[500],
+                            style: const TextStyle(
+                              color: Color(0xFF8B949E),
                               fontSize: 13,
                             ),
                           ),
@@ -741,17 +761,10 @@ class _TaskListTableState extends State<TaskListTable> {
     Task task,
     String? initialCategoryId,
   ) {
-    showDialog(
-      context: context,
-      builder: (context) => TaskEditDialog(
-        task: task,
-        fields: widget.fields,
-        initialFieldId: initialCategoryId,
-        onSave: (updatedTask, fieldId) {
-          widget.onTaskUpdate(updatedTask);
-          Navigator.pop(context);
-        },
-      ),
+    TaskEditorSheet.show(
+      context,
+      task: task,
+      fields: widget.fields,
     );
   }
 
@@ -854,182 +867,7 @@ class _TaskListTableState extends State<TaskListTable> {
   }
 }
 
-class TaskEditDialog extends StatefulWidget {
-  const TaskEditDialog({
-    super.key,
-    required this.task,
-    required this.fields,
-    required this.initialFieldId,
-    required this.onSave,
-  });
 
-  final Task task;
-  final List<Field> fields;
-  final String? initialFieldId;
-  final Function(Task, String?) onSave;
-
-  @override
-  State<TaskEditDialog> createState() => _TaskEditDialogState();
-}
-
-class _TaskEditDialogState extends State<TaskEditDialog> {
-  late TextEditingController _titleController;
-  late TextEditingController _descriptionController;
-  late TaskStatus _selectedStatus;
-  late String? _selectedFieldId;
-  late DateTime? _selectedDueDate;
-
-  @override
-  void initState() {
-    super.initState();
-    _titleController = TextEditingController(text: widget.task.title);
-    _descriptionController = TextEditingController(
-      text: widget.task.description ?? '',
-    );
-    _selectedStatus = widget.task.status;
-    _selectedFieldId = widget.initialFieldId;
-    _selectedDueDate = widget.task.dueDate;
-  }
-
-  @override
-  void dispose() {
-    _titleController.dispose();
-    _descriptionController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      title: const Text('Edit Task'),
-      content: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            TextField(
-              controller: _titleController,
-              decoration: InputDecoration(
-                labelText: 'Title',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _descriptionController,
-              decoration: InputDecoration(
-                labelText: 'Description',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-              maxLines: 3,
-            ),
-            const SizedBox(height: 16),
-            // Category selection is hidden in this UI version
-            const SizedBox(height: 16),
-            DropdownButtonFormField<TaskStatus>(
-              initialValue: _selectedStatus,
-              decoration: InputDecoration(
-                labelText: 'Status',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-              items: TaskStatus.values
-                  .map(
-                    (status) => DropdownMenuItem(
-                      value: status,
-                      child: Text(status.label),
-                    ),
-                  )
-                  .toList(),
-              onChanged: (value) {
-                if (value != null) {
-                  setState(() {
-                    _selectedStatus = value;
-                  });
-                }
-              },
-            ),
-            const SizedBox(height: 16),
-            ListTile(
-              title: const Text('Due Date'),
-              subtitle: Text(
-                _selectedDueDate != null
-                    ? DateFormat('MMM d, yyyy').format(_selectedDueDate!)
-                    : 'Not set',
-              ),
-              trailing: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (_selectedDueDate != null)
-                    IconButton(
-                      icon: const Icon(Icons.clear),
-                      onPressed: () {
-                        setState(() {
-                          _selectedDueDate = null;
-                        });
-                      },
-                    ),
-                  IconButton(
-                    icon: const Icon(Icons.calendar_today),
-                    onPressed: () async {
-                      final date = await showDatePicker(
-                        context: context,
-                        initialDate:
-                            _selectedDueDate ??
-                            DateTime.now().add(const Duration(days: 7)),
-                        firstDate: DateTime.now(),
-                        lastDate: DateTime.now().add(const Duration(days: 365)),
-                      );
-                      if (date != null) {
-                        setState(() {
-                          _selectedDueDate = date;
-                        });
-                      }
-                    },
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('Cancel'),
-        ),
-        FilledButton(
-          onPressed: () {
-            final title = _titleController.text.trim();
-            if (title.isEmpty) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Please enter a title')),
-              );
-              return;
-            }
-
-            final updatedTask = widget.task.copyWith(
-              title: title,
-              description: _descriptionController.text.trim().isEmpty
-                  ? null
-                  : _descriptionController.text.trim(),
-              status: _selectedStatus,
-              dueDate: _selectedDueDate,
-            );
-
-            widget.onSave(updatedTask, _selectedFieldId);
-          },
-          child: const Text('Save'),
-        ),
-      ],
-    );
-  }
-}
 
 class _AssigneeInput {
   final String name;
@@ -1077,10 +915,10 @@ class _TextFieldCellState extends State<_TextFieldCell> {
       return TextField(
         controller: _controller,
         autofocus: true,
-        style: TextStyle(color: Colors.grey[700], fontSize: 13),
+        style: const TextStyle(color: Color(0xFFE6EDF3), fontSize: 13),
         decoration: const InputDecoration(
           isDense: true,
-          border: OutlineInputBorder(),
+          border: OutlineInputBorder(borderSide: BorderSide(color: Color(0xFF30363D))),
           contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
         ),
         onSubmitted: (_) => _submit(),
@@ -1095,7 +933,7 @@ class _TextFieldCellState extends State<_TextFieldCell> {
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
         child: Text(
           widget.value?.isEmpty ?? true ? '-' : widget.value!,
-          style: TextStyle(color: Colors.grey[700], fontSize: 13),
+          style: const TextStyle(color: Color(0xFFE6EDF3), fontSize: 13),
         ),
       ),
     );
@@ -1120,7 +958,7 @@ class _SingleSelectFieldCell extends StatelessWidget {
     if (options.isEmpty) {
       return Text(
         value ?? '-',
-        style: TextStyle(color: Colors.grey[700], fontSize: 13),
+        style: const TextStyle(color: Color(0xFFE6EDF3), fontSize: 13),
       );
     }
 
@@ -1150,7 +988,7 @@ class _SingleSelectFieldCell extends StatelessWidget {
               child: Text(
                 value ?? '-',
                 style: TextStyle(
-                  color: value != null ? color : Colors.grey[700],
+                  color: value != null ? color : const Color(0xFF8B949E),
                   fontSize: 13,
                 ),
               ),
@@ -1195,7 +1033,7 @@ class _DateFieldCell extends StatelessWidget {
             Expanded(
               child: Text(
                 _formatDate(value),
-                style: TextStyle(color: Colors.grey[700], fontSize: 13),
+                style: const TextStyle(color: Color(0xFF8B949E), fontSize: 13),
               ),
             ),
             Icon(Icons.calendar_today, size: 14, color: Colors.grey[600]),
@@ -1214,15 +1052,12 @@ class _AssigneesCell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        IconButton(
-          icon: const Icon(Icons.add, size: 18),
-          tooltip: 'Assign',
-          onPressed: onAdd,
-        ),
-      ],
+    return const Padding(
+      padding: EdgeInsets.symmetric(horizontal: 8),
+      child: Text(
+        'Unassigned',
+        style: TextStyle(color: Color(0xFF484F58), fontSize: 12),
+      ),
     );
   }
 }

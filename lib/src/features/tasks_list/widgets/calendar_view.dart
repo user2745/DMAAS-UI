@@ -8,10 +8,12 @@ class CalendarView extends StatefulWidget {
     super.key,
     required this.tasks,
     this.onTaskTap,
+    this.onAddTaskAtDate,
   });
 
   final List<Task> tasks;
   final ValueChanged<Task>? onTaskTap;
+  final ValueChanged<DateTime>? onAddTaskAtDate;
 
   @override
   State<CalendarView> createState() => _CalendarViewState();
@@ -114,6 +116,29 @@ class _CalendarViewState extends State<CalendarView> {
           },
           icon: const Icon(Icons.chevron_right),
         ),
+        const SizedBox(width: 8),
+        ElevatedButton.icon(
+          onPressed: widget.onAddTaskAtDate != null
+              ? () => widget.onAddTaskAtDate!(DateTime.now())
+              : null,
+          icon: const Icon(Icons.add),
+          label: const Text('Add Task'),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: theme.colorScheme.primary.withAlpha(40),
+            foregroundColor: theme.colorScheme.primary,
+            elevation: 0,
+            padding: const EdgeInsets.symmetric(
+              horizontal: 24,
+              vertical: 12,
+            ),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+              side: BorderSide(
+                color: theme.colorScheme.primary.withAlpha(80),
+              ),
+            ),
+          ),
+        ),
       ],
     );
   }
@@ -151,9 +176,13 @@ class _CalendarViewState extends State<CalendarView> {
     final hasTasks = tasks.isNotEmpty;
 
     return GestureDetector(
-      onTap: hasTasks
-          ? () => _showDaySheet(context, date, tasks)
-          : null,
+      onTap: () {
+        if (hasTasks) {
+          _showDaySheet(context, date, tasks);
+        } else if (widget.onAddTaskAtDate != null) {
+          widget.onAddTaskAtDate!(date);
+        }
+      },
       child: Container(
         decoration: BoxDecoration(
           color: isToday

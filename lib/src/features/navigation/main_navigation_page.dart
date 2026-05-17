@@ -6,13 +6,13 @@ import '../auth/cubit/auth_state.dart';
 import '../auth/view/login_page.dart';
 import '../board/view/task_board_page.dart';
 import '../board/cubit/task_board_cubit.dart';
-import '../purchase/cubit/purchase_cubit.dart';
-import '../purchase/cubit/purchase_state.dart';
-import '../purchase/view/paywall_page.dart';
 import '../boost/cubit/boost_cubit.dart';
 import '../boost/cubit/boost_state.dart';
 import '../today/today_tasks_page.dart';
 import '../tasks_list/view/tasks_list_page.dart';
+import '../tasks_list/cubit/tasks_list_cubit.dart';
+import '../tasks_list/widgets/view_toggle_buttons.dart';
+import '../board/widgets/task_editor_sheet.dart';
 
 class MainNavigationPage extends StatefulWidget {
   const MainNavigationPage({super.key});
@@ -49,23 +49,32 @@ class _MainNavigationPageState extends State<MainNavigationPage>
 
   @override
   Widget build(BuildContext context) {
-    return BlocListener<PurchaseCubit, PurchaseState>(
-      listenWhen: (prev, curr) =>
-          !prev.hasHitLimit && curr.hasHitLimit && !curr.isPurchased,
-      listener: (context, state) {
-        PaywallPage.show(context);
-      },
-      child: Scaffold(
-        appBar: AppBar(
-          title: const Text(
-            'DMAAS',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w800,
-              letterSpacing: 0.5,
-            ),
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text(
+          'DMAAS',
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.w800,
+            letterSpacing: 0.5,
           ),
+        ),
         actions: [
+          // View toggles for the Tasks tab
+          if (_tabController.index == 2)
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: BlocBuilder<TasksListCubit, TasksListState>(
+                builder: (context, state) {
+                  return ViewToggleButtons(
+                    currentViewMode: state.viewMode,
+                    onModeSelected: (mode) {
+                      context.read<TasksListCubit>().setViewMode(mode);
+                    },
+                  );
+                },
+              ),
+            ),
           // ⚡ Credit badge
           BlocBuilder<BoostCubit, BoostState>(
             builder: (context, boostState) {
@@ -73,30 +82,34 @@ class _MainNavigationPageState extends State<MainNavigationPage>
               return Padding(
                 padding: const EdgeInsets.only(right: 4),
                 child: Center(
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF21262D),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
-                          color: const Color(0xFFBB86FC).withAlpha(80)),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Text('⚡',
-                            style: TextStyle(fontSize: 12)),
-                        const SizedBox(width: 4),
-                        Text(
-                          '${boostState.credits}',
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: Color(0xFFBB86FC),
-                            fontWeight: FontWeight.w700,
+                  child: InkWell(
+                    onTap: () => _showCreditSummary(context),
+                    borderRadius: BorderRadius.circular(20),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF21262D),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                            color: const Color(0xFFBB86FC).withAlpha(80)),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Text('⚡',
+                              style: TextStyle(fontSize: 12)),
+                          const SizedBox(width: 4),
+                          Text(
+                            '${boostState.credits}',
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: Color(0xFFBB86FC),
+                              fontWeight: FontWeight.w700,
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 ),
@@ -170,7 +183,7 @@ class _MainNavigationPageState extends State<MainNavigationPage>
           tabs: const [
             Tab(icon: Icon(Icons.view_week), text: 'Board'),
             Tab(icon: Icon(Icons.today), text: 'Today'),
-            Tab(icon: Icon(Icons.task_alt), text: 'List'),
+            Tab(icon: Icon(Icons.task_alt), text: 'Tasks'),
           ],
         ),
       ),
@@ -182,6 +195,96 @@ class _MainNavigationPageState extends State<MainNavigationPage>
           TasksListPage(),
         ],
       ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          TaskEditorSheet.show(context);
+        },
+        tooltip: 'Create Task',
+        child: const Icon(Icons.add),
+      ),
+    );
+  }
+  void _showCreditSummary(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF161B22),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Row(
+          children: [
+            Text('⚡', style: TextStyle(fontSize: 20)),
+            SizedBox(width: 12),
+            Text('AI Boost Credits'),
+          ],
+        ),
+        content: BlocBuilder<BoostCubit, BoostState>(
+          builder: (context, state) {
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'You have ${state.credits} credits remaining.',
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Color(0xFFE6EDF3)),
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  'Use credits to "Boost" tasks. AI will help you break down complex tasks, write descriptions, and suggest subtasks.',
+                  style: TextStyle(color: Color(0xFF8B949E)),
+                ),
+                const SizedBox(height: 12),
+                const Text(
+                  'Credits refresh automatically based on your plan.',
+                  style: TextStyle(color: Color(0xFF8B949E), fontSize: 12, fontStyle: FontStyle.italic),
+                ),
+                const SizedBox(height: 20),
+                const Text(
+                  'Purchase More Credits',
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFFE6EDF3)),
+                ),
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    Expanded(
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF21262D),
+                          foregroundColor: const Color(0xFFBB86FC),
+                          side: BorderSide(color: const Color(0xFFBB86FC).withAlpha(80)),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        ),
+                        onPressed: () {
+                          context.read<BoostCubit>().purchaseCredits(50);
+                        },
+                        child: const Text('+50'),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFBB86FC),
+                          foregroundColor: Colors.black,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        ),
+                        onPressed: () {
+                          context.read<BoostCubit>().purchaseCredits(100);
+                        },
+                        child: const Text('+100'),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            );
+          },
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+        ],
       ),
     );
   }

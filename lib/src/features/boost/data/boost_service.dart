@@ -87,4 +87,12 @@ class BoostService {
   Future<int> fetchCredits() async {
     return await _getCreditsFromPrefs();
   }
+
+  Future<int> addCredits(int amount) async {
+    final prefs = await SharedPreferences.getInstance();
+    final current = await _getCreditsFromPrefs();
+    final newAmount = current + amount;
+    await prefs.setInt('boost_credits', newAmount);
+    return newAmount;
+  }
 }
