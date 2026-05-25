@@ -11,7 +11,6 @@ import '../boost/cubit/boost_state.dart';
 import '../today/today_tasks_page.dart';
 import '../tasks_list/view/tasks_list_page.dart';
 import '../tasks_list/cubit/tasks_list_cubit.dart';
-import '../tasks_list/widgets/view_toggle_buttons.dart';
 import '../board/widgets/task_editor_sheet.dart';
 
 class MainNavigationPage extends StatefulWidget {
@@ -61,21 +60,6 @@ class _MainNavigationPageState extends State<MainNavigationPage>
           ),
         ),
         actions: [
-          // View toggles for the Tasks tab
-          if (_tabController.index == 2)
-            Padding(
-              padding: const EdgeInsets.only(right: 8),
-              child: BlocBuilder<TasksListCubit, TasksListState>(
-                builder: (context, state) {
-                  return ViewToggleButtons(
-                    currentViewMode: state.viewMode,
-                    onModeSelected: (mode) {
-                      context.read<TasksListCubit>().setViewMode(mode);
-                    },
-                  );
-                },
-              ),
-            ),
           // ⚡ Credit badge
           BlocBuilder<BoostCubit, BoostState>(
             builder: (context, boostState) {
