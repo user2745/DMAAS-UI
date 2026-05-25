@@ -1,24 +1,37 @@
 import 'package:firebase_auth/firebase_auth.dart';
 
 class AuthRepository {
-  final FirebaseAuth _firebaseAuth;
+  final FirebaseAuth? _firebaseAuth;
 
   AuthRepository({FirebaseAuth? firebaseAuth})
-      : _firebaseAuth = firebaseAuth ?? FirebaseAuth.instance;
+      : _firebaseAuth = firebaseAuth ?? _getDefaultFirebaseAuth();
+
+  static FirebaseAuth? _getDefaultFirebaseAuth() {
+    try {
+      return FirebaseAuth.instance;
+    } catch (_) {
+      return null;
+    }
+  }
 
   /// Stream of current user changes
-  Stream<User?> get user => _firebaseAuth.authStateChanges();
+  Stream<User?> get user =>
+      _firebaseAuth?.authStateChanges() ?? const Stream.empty();
 
   /// Get current user
-  User? get currentUser => _firebaseAuth.currentUser;
+  User? get currentUser => _firebaseAuth?.currentUser;
 
   /// Sign in with email and password
   Future<User?> signIn({
     required String email,
     required String password,
   }) async {
+    final auth = _firebaseAuth;
+    if (auth == null) {
+      throw Exception('Firebase Auth is not available.');
+    }
     try {
-      final credential = await _firebaseAuth.signInWithEmailAndPassword(
+      final credential = await auth.signInWithEmailAndPassword(
         email: email,
         password: password,
       );
@@ -33,8 +46,12 @@ class AuthRepository {
     required String email,
     required String password,
   }) async {
+    final auth = _firebaseAuth;
+    if (auth == null) {
+      throw Exception('Firebase Auth is not available.');
+    }
     try {
-      final credential = await _firebaseAuth.createUserWithEmailAndPassword(
+      final credential = await auth.createUserWithEmailAndPassword(
         email: email,
         password: password,
       );
@@ -46,8 +63,12 @@ class AuthRepository {
 
   /// Send password reset email
   Future<void> resetPassword({required String email}) async {
+    final auth = _firebaseAuth;
+    if (auth == null) {
+      throw Exception('Firebase Auth is not available.');
+    }
     try {
-      await _firebaseAuth.sendPasswordResetEmail(email: email);
+      await auth.sendPasswordResetEmail(email: email);
     } on FirebaseAuthException catch (e) {
       throw _handleAuthException(e);
     }
@@ -55,12 +76,12 @@ class AuthRepository {
 
   /// Sign out
   Future<void> signOut() async {
-    await _firebaseAuth.signOut();
+    await _firebaseAuth?.signOut();
   }
 
   /// Get current user ID token for API calls
   Future<String?> getIdToken() async {
-    return await _firebaseAuth.currentUser?.getIdToken();
+    return await _firebaseAuth?.currentUser?.getIdToken();
   }
 
   /// Handle Firebase Auth exceptions

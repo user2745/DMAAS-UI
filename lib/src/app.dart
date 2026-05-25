@@ -16,7 +16,20 @@ import 'features/preferences/data/preferences_api_service.dart';
 import 'theme/app_theme.dart';
 
 class TaskBoardApp extends StatelessWidget {
-  const TaskBoardApp({super.key});
+  const TaskBoardApp({
+    super.key,
+    this.authRepository,
+    this.taskApiService,
+    this.fieldApiService,
+    this.boostService,
+    this.preferencesApiService,
+  });
+
+  final AuthRepository? authRepository;
+  final TaskApiService? taskApiService;
+  final FieldApiService? fieldApiService;
+  final BoostService? boostService;
+  final PreferencesApiService? preferencesApiService;
 
   @override
   Widget build(BuildContext context) {
@@ -24,15 +37,15 @@ class TaskBoardApp extends StatelessWidget {
       providers: [
         BlocProvider<AuthCubit>(
           create: (_) => AuthCubit(
-            authRepository: AuthRepository(),
+            authRepository: authRepository ?? AuthRepository(),
           ),
         ),
         BlocProvider<TaskBoardCubit>(
           create: (context) => TaskBoardCubit(
-            apiService: TaskApiService(
+            apiService: taskApiService ?? TaskApiService(
               tokenProvider: context.read<AuthCubit>().getIdToken,
             ),
-            fieldApiService: FieldApiService(
+            fieldApiService: fieldApiService ?? FieldApiService(
               tokenProvider: context.read<AuthCubit>().getIdToken,
             ),
           )..loadTasks(),
@@ -40,24 +53,24 @@ class TaskBoardApp extends StatelessWidget {
         BlocProvider<SearchCubit>(create: (_) => SearchCubit()),
         BlocProvider<BoostCubit>(
           create: (context) => BoostCubit(
-            boostService: BoostService(
+            boostService: boostService ?? BoostService(
               tokenProvider: context.read<AuthCubit>().getIdToken,
             ),
           ),
         ),
         BlocProvider<PreferencesCubit>(
           create: (context) => PreferencesCubit(
-            apiService: PreferencesApiService(
+            apiService: preferencesApiService ?? PreferencesApiService(
               tokenProvider: context.read<AuthCubit>().getIdToken,
             ),
           )..load(),
         ),
         BlocProvider<TasksListCubit>(
           create: (context) => TasksListCubit(
-            taskApiService: TaskApiService(
+            taskApiService: taskApiService ?? TaskApiService(
               tokenProvider: context.read<AuthCubit>().getIdToken,
             ),
-            fieldApiService: FieldApiService(
+            fieldApiService: fieldApiService ?? FieldApiService(
               tokenProvider: context.read<AuthCubit>().getIdToken,
             ),
           ),

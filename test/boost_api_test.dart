@@ -29,5 +29,5 @@ void main() {
     final result = data['choices'][0]['message']['content'] as String;
     print('Result: $result');
     expect(result, isNotEmpty);
-  });
+  }, skip: 'Requires valid DEEPSEEK_API_KEY');
 }
