@@ -73,11 +73,14 @@ class _TasksListPageState extends State<TasksListPage> {
             children: [
               Padding(
                 padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
-                child: ViewToggleButtons(
-                  currentViewMode: state.viewMode,
-                  onModeSelected: (mode) {
-                    context.read<TasksListCubit>().setViewMode(mode);
-                  },
+                child: Align(
+                  alignment: Alignment.centerRight,
+                  child: ViewToggleButtons(
+                    currentViewMode: state.viewMode,
+                    onModeSelected: (mode) {
+                      context.read<TasksListCubit>().setViewMode(mode);
+                    },
+                  ),
                 ),
               ),
               Padding(
@@ -116,11 +119,14 @@ class _TasksListPageState extends State<TasksListPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                ViewToggleButtons(
-                  currentViewMode: state.viewMode,
-                  onModeSelected: (mode) {
-                    context.read<TasksListCubit>().setViewMode(mode);
-                  },
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: ViewToggleButtons(
+                    currentViewMode: state.viewMode,
+                    onModeSelected: (mode) {
+                      context.read<TasksListCubit>().setViewMode(mode);
+                    },
+                  ),
                 ),
                 const SizedBox(height: 12),
                 // Design Language: Focus-animated filter input (200ms)
