@@ -11,6 +11,7 @@ import '../widgets/roadmap_view.dart';
 import '../widgets/task_list_table.dart';
 import '../widgets/view_toggle_buttons.dart';
 import '../../../widgets/animated_focus_text_field.dart';
+import '../../agent/view/agent_panel.dart';
 
 // Design Language: Multi-view list/calendar/roadmap with fluid transitions
 // See DESIGN_LANGUAGE.md for animation timings and layout rules
@@ -86,11 +87,12 @@ class _TasksListPageState extends State<TasksListPage> {
               Padding(
                 padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
                 child: AnimatedFocusTextField(
-                  prefixIcon: const Icon(Icons.search),
-                  hintText: 'Filter by keyword or by field',
+                  prefixIcon: const Icon(Icons.auto_awesome, size: 18),
+                  hintText: 'Search tasks or ask anything...',
                   onChanged: (value) {
                     context.read<TasksListCubit>().setQuery(value);
                   },
+                  onSubmitted: (value) => _handleSearchSubmit(context, value),
                 ),
               ),
               Expanded(
@@ -131,11 +133,12 @@ class _TasksListPageState extends State<TasksListPage> {
                 const SizedBox(height: 12),
                 // Design Language: Focus-animated filter input (200ms)
                 AnimatedFocusTextField(
-                  prefixIcon: const Icon(Icons.search),
-                  hintText: 'Filter by keyword or by field',
+                  prefixIcon: const Icon(Icons.auto_awesome, size: 18),
+                  hintText: 'Search tasks or ask anything...',
                   onChanged: (value) {
                     context.read<TasksListCubit>().setQuery(value);
                   },
+                  onSubmitted: (value) => _handleSearchSubmit(context, value),
                 ),
                 const SizedBox(height: 24),
                 // Task Count
@@ -265,5 +268,25 @@ class _TasksListPageState extends State<TasksListPage> {
       fields: cubit.state.fields,
     );
   }
-}
 
+  /// Detect if input looks like an agent request vs. a task filter.
+  bool _isAgentQuery(String input) {
+    final lower = input.toLowerCase().trim();
+    if (lower.length < 5) return false;
+
+    const agentVerbs = [
+      'create', 'find', 'summarize', 'analyze', 'show me', 'what',
+      'how many', 'list all', 'report', 'overdue', 'search for',
+      'help me', 'generate', 'break down', 'draft', 'suggest',
+      'who', 'where', 'when', 'why', 'update all', 'move all',
+    ];
+
+    return agentVerbs.any((v) => lower.contains(v));
+  }
+
+  void _handleSearchSubmit(BuildContext context, String value) {
+    if (_isAgentQuery(value)) {
+      AgentPanel.show(context, initialQuery: value);
+    }
+  }
+}

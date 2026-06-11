@@ -214,7 +214,7 @@ class _MainNavigationPageState extends State<MainNavigationPage>
                 ),
                 const SizedBox(height: 16),
                 const Text(
-                  'Use credits to "Boost" tasks. AI will help you break down complex tasks, write descriptions, and suggest subtasks.',
+                  'Use credits to "Boost" tasks. Get help breaking down complex tasks, writing descriptions, and suggesting subtasks.',
                   style: TextStyle(color: Color(0xFF8B949E)),
                 ),
                 const SizedBox(height: 12),

@@ -55,7 +55,7 @@ class BoostService {
         'messages': [
           {
             'role': 'system',
-            'content': 'You are an AI assistant that helps boost task productivity. Provide actionable insights, breakdown the task, or draft a response based on the user intent.'
+            'content': 'You help boost task productivity. Provide actionable insights, break down the task, or draft a response based on the user intent.'
           },
           {
             'role': 'user',

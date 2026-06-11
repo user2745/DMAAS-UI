@@ -168,18 +168,27 @@ class _TaskListTableState extends State<TaskListTable> {
       );
     }
 
-    return Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        color: const Color(0xFF0D1117),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: const Color(0xFF30363D), width: 1),
-      ),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: SizedBox(
-          width: _tableWidth,
-          child: Column(
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final baseTableWidth = _tableWidth;
+        final extraWidth = constraints.maxWidth > baseTableWidth
+            ? constraints.maxWidth - baseTableWidth
+            : 0.0;
+        final actualTableWidth = baseTableWidth + extraWidth;
+        final titleWidth = 280.0 + extraWidth;
+
+        return Container(
+          width: double.infinity,
+          decoration: BoxDecoration(
+            color: const Color(0xFF0D1117),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: const Color(0xFF30363D), width: 1),
+          ),
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: SizedBox(
+              width: actualTableWidth,
+              child: Column(
             children: [
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -197,7 +206,7 @@ class _TaskListTableState extends State<TaskListTable> {
                     ),
                     _headerCell(
                       label: 'Title',
-                      width: 280,
+                      width: titleWidth,
                       sortKey: TaskSortKey.title,
                       onTap: () => widget.onSortChanged(TaskSortKey.title),
                     ),
@@ -407,7 +416,7 @@ class _TaskListTableState extends State<TaskListTable> {
                             ),
                           ),
                           SizedBox(
-                            width: 280,
+                            width: titleWidth,
                             child: InkWell(
                               onTap: () => _showEditTaskDialog(context, task, fieldId),
                               child: Text(
@@ -610,15 +619,17 @@ class _TaskListTableState extends State<TaskListTable> {
                 },
               ),
             ),
-            _buildQuickAddRow(),
+            _buildQuickAddRow(titleWidth),
           ],
         ),
       ),
     ),
   );
-}
+      },
+    );
+  }
 
-  Widget _buildQuickAddRow() {
+  Widget _buildQuickAddRow(double titleWidth) {
     return Container(
       decoration: const BoxDecoration(
         color: Color(0xFF0D1117),
@@ -637,7 +648,7 @@ class _TaskListTableState extends State<TaskListTable> {
             ),
           ),
           SizedBox(
-            width: 280,
+            width: titleWidth,
             child: _isAddingTask
                 ? _InlineTaskEditor(
                     controller: _newTaskController,
@@ -934,6 +945,8 @@ class _TextFieldCellState extends State<_TextFieldCell> {
         child: Text(
           widget.value?.isEmpty ?? true ? '-' : widget.value!,
           style: const TextStyle(color: Color(0xFFE6EDF3), fontSize: 13),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
         ),
       ),
     );
@@ -959,6 +972,8 @@ class _SingleSelectFieldCell extends StatelessWidget {
       return Text(
         value ?? '-',
         style: const TextStyle(color: Color(0xFFE6EDF3), fontSize: 13),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
       );
     }
 
@@ -991,6 +1006,8 @@ class _SingleSelectFieldCell extends StatelessWidget {
                   color: value != null ? color : const Color(0xFF8B949E),
                   fontSize: 13,
                 ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
             Icon(Icons.arrow_drop_down, size: 16, color: Colors.grey[600]),

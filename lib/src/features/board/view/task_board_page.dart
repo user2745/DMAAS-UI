@@ -11,8 +11,6 @@ import '../widgets/task_column_new.dart';
 import '../widgets/task_editor_sheet.dart';
 import '../widgets/search_bar_widget.dart';
 
-// Design Language: Kanban board with smooth column animations and responsive layout
-// See DESIGN_LANGUAGE.md for spacing, motion, and shadow specifications
 class TaskBoardPage extends StatefulWidget {
   const TaskBoardPage({super.key});
 
@@ -156,6 +154,13 @@ class _TaskBoardPageState extends State<TaskBoardPage> with AutomaticKeepAliveCl
                   },
                   onClearFilters: () => searchCubit.clearFieldFilters(),
                   availableFilters: filterOptions,
+                  groupType: state.groupType,
+                  groupFieldId: state.groupFieldId,
+                  onGroupChanged: (type, {String? fieldId}) => context.read<TaskBoardCubit>().changeGrouping(type, fieldId: fieldId),
+                  groupableFields: state.fields
+                      .where((f) => f.type == FieldType.singleSelect)
+                      .map((f) => (f.id, f.name))
+                      .toList(),
                 ),
                 Expanded(
                   child: LayoutBuilder(
@@ -216,6 +221,12 @@ class _TaskBoardPageState extends State<TaskBoardPage> with AutomaticKeepAliveCl
                                       tasks: filteredGrouped[status] ?? const [],
                                       fields: state.fields,
                                       isReorderInFlight: state.isReorderInFlight,
+                                      groupColorForTask: state.groupType == BoardGroupType.field
+                                          ? (task) => state.groupColorForTask(task)
+                                          : null,
+                                      groupLabelForTask: state.groupType == BoardGroupType.field
+                                          ? (task) => state.groupLabelForTask(task)
+                                          : null,
                                       onAdd: () => _showTaskSheet(
                                         context,
                                         initialStatus: status,

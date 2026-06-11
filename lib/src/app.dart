@@ -9,6 +9,8 @@ import 'features/board/data/task_api_service.dart';
 import 'features/tasks_list/cubit/tasks_list_cubit.dart';
 import 'features/tasks_list/data/field_api_service.dart';
 import 'features/navigation/main_navigation_page.dart';
+import 'features/agent/cubit/agent_cubit.dart';
+import 'features/agent/data/agent_service.dart';
 import 'features/boost/cubit/boost_cubit.dart';
 import 'features/boost/data/boost_service.dart';
 import 'features/preferences/cubit/preferences_cubit.dart';
@@ -22,6 +24,7 @@ class TaskBoardApp extends StatelessWidget {
     this.taskApiService,
     this.fieldApiService,
     this.boostService,
+    this.agentService,
     this.preferencesApiService,
   });
 
@@ -29,6 +32,7 @@ class TaskBoardApp extends StatelessWidget {
   final TaskApiService? taskApiService;
   final FieldApiService? fieldApiService;
   final BoostService? boostService;
+  final AgentService? agentService;
   final PreferencesApiService? preferencesApiService;
 
   @override
@@ -54,6 +58,13 @@ class TaskBoardApp extends StatelessWidget {
         BlocProvider<BoostCubit>(
           create: (context) => BoostCubit(
             boostService: boostService ?? BoostService(
+              tokenProvider: context.read<AuthCubit>().getIdToken,
+            ),
+          ),
+        ),
+        BlocProvider<AgentCubit>(
+          create: (context) => AgentCubit(
+            agentService: agentService ?? AgentService(
               tokenProvider: context.read<AuthCubit>().getIdToken,
             ),
           ),

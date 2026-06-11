@@ -1,11 +1,14 @@
 import 'dart:async';
 import 'package:equatable/equatable.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../tasks_list/models/field.dart';
 import '../data/task_api_service.dart';
 import '../../tasks_list/data/field_api_service.dart';
 import '../models/task.dart';
+
+enum BoardGroupType { status, assignee, field }
 
 class TaskBoardState extends Equatable {
   const TaskBoardState({
@@ -15,6 +18,8 @@ class TaskBoardState extends Equatable {
     this.error,
     this.isReorderInFlight = false,
     this.collapsedStatuses = const {},
+    this.groupType = BoardGroupType.status,
+    this.groupFieldId,
   });
 
   final List<Task> tasks;
@@ -23,6 +28,32 @@ class TaskBoardState extends Equatable {
   final String? error;
   final bool isReorderInFlight;
   final Set<TaskStatus> collapsedStatuses;
+  final BoardGroupType groupType;
+  final String? groupFieldId;
+
+  /// Get the color assigned to a task's group value (for field-based grouping)
+  Color? groupColorForTask(Task task) {
+    if (groupType != BoardGroupType.field || groupFieldId == null) return null;
+    final field = fields.cast<Field?>().firstWhere(
+      (f) => f!.id == groupFieldId,
+      orElse: () => null,
+    );
+    if (field == null) return null;
+    final value = task.fieldValues?[groupFieldId!];
+    if (value == null) return null;
+    final valueStr = value.toString();
+    final idx = field.options.indexOf(valueStr);
+    if (idx < 0) return null;
+    return fieldColors[idx % fieldColors.length];
+  }
+
+  /// Get the group label for a task (for field-based grouping)
+  String? groupLabelForTask(Task task) {
+    if (groupType != BoardGroupType.field || groupFieldId == null) return null;
+    final value = task.fieldValues?[groupFieldId!];
+    if (value == null) return null;
+    return value.toString();
+  }
 
   Map<TaskStatus, List<Task>> get groupedByStatus {
     final Map<TaskStatus, List<Task>> map = {
@@ -42,6 +73,50 @@ class TaskBoardState extends Equatable {
     return map;
   }
 
+  /// Dynamic grouping: returns a map keyed by group label
+  Map<String, List<Task>> get groupedTasks {
+    final Map<String, List<Task>> map = {};
+
+    if (groupType == BoardGroupType.status) {
+      for (final status in TaskStatus.values) {
+        map[status.label] = [];
+      }
+      for (final task in tasks) {
+        map[task.status.label]!.add(task);
+      }
+    } else {
+      // Group by assignee — extract from fieldValues or fall back to 'Unassigned'
+      for (final task in tasks) {
+        final assignee = _extractAssignee(task) ?? 'Unassigned';
+        map.putIfAbsent(assignee, () => []);
+        map[assignee]!.add(task);
+      }
+    }
+
+    for (final entry in map.entries) {
+      entry.value.sort((a, b) {
+        final orderComparison = a.order.compareTo(b.order);
+        if (orderComparison != 0) return orderComparison;
+        return b.createdAt.compareTo(a.createdAt);
+      });
+    }
+    return map;
+  }
+
+  /// Try to extract an assignee string from task field values
+  static String? _extractAssignee(Task task) {
+    if (task.fieldValues == null) return null;
+    for (final entry in task.fieldValues!.entries) {
+      final key = entry.key.toLowerCase();
+      if (key.contains('assign') || key.contains('owner')) {
+        final val = entry.value;
+        if (val is String && val.isNotEmpty) return val;
+        if (val is List && val.isNotEmpty) return val.first.toString();
+      }
+    }
+    return null;
+  }
+
   TaskBoardState copyWith({
     List<Task>? tasks,
     List<Field>? fields,
@@ -49,6 +124,8 @@ class TaskBoardState extends Equatable {
     String? error,
     bool? isReorderInFlight,
     Set<TaskStatus>? collapsedStatuses,
+    BoardGroupType? groupType,
+    String? groupFieldId,
   }) =>
       TaskBoardState(
         tasks: tasks ?? this.tasks,
@@ -57,10 +134,12 @@ class TaskBoardState extends Equatable {
         error: error,
         isReorderInFlight: isReorderInFlight ?? this.isReorderInFlight,
         collapsedStatuses: collapsedStatuses ?? this.collapsedStatuses,
+        groupType: groupType ?? this.groupType,
+        groupFieldId: groupFieldId ?? this.groupFieldId,
       );
 
   @override
-  List<Object?> get props => [tasks, fields, isLoading, error, isReorderInFlight, collapsedStatuses];
+  List<Object?> get props => [tasks, fields, isLoading, error, isReorderInFlight, collapsedStatuses, groupType, groupFieldId];
 }
 
 class TaskBoardCubit extends Cubit<TaskBoardState> {
@@ -352,5 +431,9 @@ class TaskBoardCubit extends Cubit<TaskBoardState> {
     } catch (e) {
       emit(state.copyWith(error: e.toString()));
     }
+  }
+
+  void changeGrouping(BoardGroupType type, {String? fieldId}) {
+    emit(state.copyWith(groupType: type, groupFieldId: fieldId));
   }
 }

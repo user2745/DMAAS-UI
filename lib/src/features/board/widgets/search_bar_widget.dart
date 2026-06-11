@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import '../cubit/search_cubit.dart';
+import '../cubit/task_board_cubit.dart';
 
 typedef OnFieldFilterChanged = Function(FieldFilter? filter);
 
+/// Design Language: Search & Filter Interface
+/// Implements focus-animated search input (200ms) and compact filter chips.
+/// Part of the "Input Focus Animations" system (Task 7).
 class SearchBarWidget extends StatefulWidget {
   const SearchBarWidget({
     super.key,
@@ -12,6 +16,10 @@ class SearchBarWidget extends StatefulWidget {
     this.onFieldFilterChanged,
     this.onClearFilters,
     this.availableFilters = const [],
+    required this.groupType,
+    this.groupFieldId,
+    required this.onGroupChanged,
+    this.groupableFields = const [],
   });
 
   final ValueChanged<String> onChanged;
@@ -22,6 +30,11 @@ class SearchBarWidget extends StatefulWidget {
   
   /// List of available field filters [fieldId, fieldName, options]
   final List<(String, String, List<String>)> availableFilters;
+  final BoardGroupType groupType;
+  final String? groupFieldId;
+  final void Function(BoardGroupType type, {String? fieldId}) onGroupChanged;
+  /// singleSelect fields available for grouping: (fieldId, fieldName)
+  final List<(String, String)> groupableFields;
 
   @override
   State<SearchBarWidget> createState() => _SearchBarWidgetState();
@@ -29,13 +42,29 @@ class SearchBarWidget extends StatefulWidget {
 
 class _SearchBarWidgetState extends State<SearchBarWidget> {
   final _controller = TextEditingController();
+  final _focusNode = FocusNode();
   final _selectedFieldFilters = <String, List<String>>{};
   bool _showFilterPanel = false;
+  bool _isFocused = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _focusNode.addListener(_onFocusChange);
+  }
 
   @override
   void dispose() {
+    _focusNode.removeListener(_onFocusChange);
+    _focusNode.dispose();
     _controller.dispose();
     super.dispose();
+  }
+
+  void _onFocusChange() {
+    setState(() {
+      _isFocused = _focusNode.hasFocus;
+    });
   }
 
   void _toggleFilterPanel() {
@@ -83,15 +112,29 @@ class _SearchBarWidgetState extends State<SearchBarWidget> {
           child: Row(
             children: [
               Expanded(
-                child: Container(
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
                   height: 40,
                   decoration: BoxDecoration(
                     color: const Color(0xFF21262D),
                     borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: const Color(0xFF30363D), width: 1),
+                    border: Border.all(
+                      color: _isFocused 
+                          ? const Color(0xFFBB86FC) 
+                          : const Color(0xFF30363D), 
+                      width: _isFocused ? 1.5 : 1,
+                    ),
+                    boxShadow: _isFocused ? [
+                      BoxShadow(
+                        color: const Color(0xFFBB86FC).withAlpha(30),
+                        blurRadius: 8,
+                        spreadRadius: 1,
+                      )
+                    ] : [],
                   ),
                   child: TextField(
                     controller: _controller,
+                    focusNode: _focusNode,
                     onChanged: widget.onChanged,
                     style: const TextStyle(
                       color: Color(0xFFE6EDF3),
@@ -184,6 +227,58 @@ class _SearchBarWidgetState extends State<SearchBarWidget> {
                       ),
                     ),
                 ],
+              ),
+              const SizedBox(width: 8),
+              // Grouping dropdown
+              Container(
+                height: 40,
+                padding: const EdgeInsets.symmetric(horizontal: 10),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF21262D),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: const Color(0xFF30363D), width: 1),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.group_work_outlined, size: 16, color: Color(0xFF8B949E)),
+                    const SizedBox(width: 6),
+                    DropdownButton<String>(
+                      value: widget.groupType == BoardGroupType.field
+                          ? 'field:${widget.groupFieldId ?? ''}'
+                          : widget.groupType.name,
+                      underline: const SizedBox(),
+                      dropdownColor: const Color(0xFF21262D),
+                      style: const TextStyle(color: Color(0xFFE6EDF3), fontSize: 13),
+                      isDense: true,
+                      onChanged: (value) {
+                        if (value == null) return;
+                        if (value == 'status') {
+                          widget.onGroupChanged(BoardGroupType.status);
+                        } else if (value == 'assignee') {
+                          widget.onGroupChanged(BoardGroupType.assignee);
+                        } else if (value.startsWith('field:')) {
+                          final fieldId = value.substring(6);
+                          widget.onGroupChanged(BoardGroupType.field, fieldId: fieldId);
+                        }
+                      },
+                      items: [
+                        const DropdownMenuItem(
+                          value: 'status',
+                          child: Text('Status'),
+                        ),
+                        const DropdownMenuItem(
+                          value: 'assignee',
+                          child: Text('Assignee'),
+                        ),
+                        ...widget.groupableFields.map((f) => DropdownMenuItem(
+                          value: 'field:${f.$1}',
+                          child: Text(f.$2),
+                        )),
+                      ],
+                    ),
+                  ],
+                ),
               ),
               const SizedBox(width: 8),
               // New Task pill button

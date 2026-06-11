@@ -1,9 +1,5 @@
 import 'package:flutter/material.dart';
 
-// Design Language: Animated Kanban column with drag-and-drop feedback
-// See lib/src/theme/animation_timings.dart for column collapse and drop durations
-// Uses systemic card spacing (12px) and container border radii (16px)
-
 import '../../tasks_list/models/field.dart';
 import '../models/task.dart';
 import '../utils/drop_position_calculator.dart';
@@ -23,6 +19,8 @@ class TaskColumn extends StatefulWidget {
     this.fields = const [],
     this.isReorderInFlight = false,
     this.onCollapse,
+    this.groupColorForTask,
+    this.groupLabelForTask,
   });
 
   final TaskStatus status;
@@ -35,6 +33,8 @@ class TaskColumn extends StatefulWidget {
   final List<Field> fields;
   final bool isReorderInFlight;
   final VoidCallback? onCollapse;
+  final Color? Function(Task task)? groupColorForTask;
+  final String? Function(Task task)? groupLabelForTask;
 
   @override
   State<TaskColumn> createState() => _TaskColumnState();
@@ -250,12 +250,14 @@ class _TaskColumnState extends State<TaskColumn> {
             clipBehavior: Clip.hardEdge,
             decoration: const BoxDecoration(),
             child: TaskCard(
-              task: task,
-              fields: widget.fields,
-              onMoveLeft: null,
-              onMoveRight: null,
-              onDelete: () => widget.onRemove(task.id),
-              onEdit: () => widget.onEdit(task),
+            task: task,
+            fields: widget.fields,
+            groupColor: widget.groupColorForTask?.call(task),
+            groupLabel: widget.groupLabelForTask?.call(task),
+            onMoveLeft: null,
+            onMoveRight: null,
+            onDelete: () => widget.onRemove(task.id),
+            onEdit: () => widget.onEdit(task),
             ),
           ),
         );
@@ -273,6 +275,8 @@ class _TaskColumnState extends State<TaskColumn> {
           child: TaskCard(
             task: task,
             fields: widget.fields,
+            groupColor: widget.groupColorForTask?.call(task),
+            groupLabel: widget.groupLabelForTask?.call(task),
             onMoveLeft: task.status.previous == null
                 ? null
                 : () => widget.onMove(task.id, task.status.previous!),
@@ -290,6 +294,14 @@ class _TaskColumnState extends State<TaskColumn> {
 
     // Placeholder at the end (after all visible cards)
     maybeInsertPlaceholder();
+
+    // Add Task Button (Inside column)
+    cards.add(
+      _AddTaskButton(
+        status: widget.status,
+        onTap: widget.onAdd,
+      ),
+    );
 
     return cards;
   }
@@ -365,14 +377,6 @@ class _TaskColumnState extends State<TaskColumn> {
           ),
         ),
         const SizedBox(width: 2),
-        IconButton(
-          tooltip: 'Add to ${widget.status.label}',
-          onPressed: widget.onAdd,
-          icon: Icon(Icons.add_circle_outline, color: widget.status.color),
-          iconSize: 20,
-          visualDensity: VisualDensity.compact,
-          padding: EdgeInsets.zero,
-        ),
         if (widget.onCollapse != null)
           IconButton(
             tooltip: 'Collapse column',
@@ -429,30 +433,85 @@ class _EmptyColumn extends StatelessWidget {
             ),
             const SizedBox(height: 4),
             const Text(
-              'Drag tasks here or tap + to add',
+              'Drag tasks here to get started',
               style: TextStyle(
                 color: Color(0xFF8B949E),
                 fontSize: 11,
               ),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 20),
-            ElevatedButton.icon(
-              onPressed: onAdd,
-              icon: const Icon(Icons.add, size: 18),
-              label: const Text('Add Task'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: status.color.withAlpha(40),
-                foregroundColor: status.color,
-                elevation: 0,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  side: BorderSide(color: status.color.withAlpha(80)),
-                ),
-              ),
+            const SizedBox(height: 16),
+            _AddTaskButton(
+              status: status,
+              onTap: onAdd,
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+class _AddTaskButton extends StatefulWidget {
+  const _AddTaskButton({
+    required this.status,
+    required this.onTap,
+  });
+
+  final TaskStatus status;
+  final VoidCallback onTap;
+
+  @override
+  State<_AddTaskButton> createState() => _AddTaskButtonState();
+}
+
+class _AddTaskButtonState extends State<_AddTaskButton> {
+  bool _isHovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: InkWell(
+        onTap: widget.onTap,
+        onHover: (hovering) => setState(() => _isHovered = hovering),
+        borderRadius: BorderRadius.circular(12),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+          decoration: BoxDecoration(
+            color: _isHovered 
+                ? widget.status.color.withAlpha(20) 
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: _isHovered 
+                  ? widget.status.color.withAlpha(80) 
+                  : const Color(0xFF30363D).withAlpha(150),
+              width: 1,
+            ),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                Icons.add_rounded,
+                size: 18,
+                color: _isHovered 
+                    ? widget.status.color 
+                    : const Color(0xFF8B949E),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Add item',
+                style: TextStyle(
+                  color: _isHovered 
+                      ? widget.status.color 
+                      : const Color(0xFF8B949E),
+                  fontWeight: FontWeight.w600,
+                  fontSize: 13,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

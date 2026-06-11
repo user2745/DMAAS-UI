@@ -21,6 +21,8 @@ class TaskCard extends StatefulWidget {
     required this.onDelete,
     required this.onEdit,
     this.fields = const [],
+    this.groupColor,
+    this.groupLabel,
   });
 
   final Task task;
@@ -29,6 +31,8 @@ class TaskCard extends StatefulWidget {
   final VoidCallback onDelete;
   final VoidCallback onEdit;
   final List<Field> fields;
+  final Color? groupColor;
+  final String? groupLabel;
 
   @override
   State<TaskCard> createState() => _TaskCardState();
@@ -84,7 +88,7 @@ class _TaskCardState extends State<TaskCard> {
 
   Widget _buildCardContent(BuildContext context, {bool isDragging = false}) {
     final theme = Theme.of(context);
-    final statusColor = widget.task.status.color;
+    final statusColor = widget.groupColor ?? widget.task.status.color;
     final scale = (_isHovered && !isDragging) ? 1.015 : 1.0;
 
     // Flutter constraint: borderRadius requires uniform border colors.
@@ -131,16 +135,46 @@ class _TaskCardState extends State<TaskCard> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Expanded(
-                            child: Text(
-                              widget.task.title,
-                              style: theme.textTheme.bodyMedium?.copyWith(
-                                fontWeight: FontWeight.w600,
-                                fontSize: 14,
-                                height: 1.35,
-                                color: const Color(0xFFE6EDF3),
-                              ),
-                              maxLines: 3,
-                              overflow: TextOverflow.ellipsis,
+                            child: Row(
+                              children: [
+                                Flexible(
+                                  child: Text(
+                                    widget.task.title,
+                                    style: theme.textTheme.bodyMedium?.copyWith(
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 14,
+                                      height: 1.35,
+                                      color: const Color(0xFFE6EDF3),
+                                    ),
+                                    maxLines: 3,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                if (widget.groupLabel != null) ...[
+                                  const SizedBox(width: 6),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: (widget.groupColor ?? const Color(0xFF6366F1)).withAlpha(25),
+                                      borderRadius: BorderRadius.circular(6),
+                                      border: Border.all(
+                                        color: (widget.groupColor ?? const Color(0xFF6366F1)).withAlpha(80),
+                                        width: 0.8,
+                                      ),
+                                    ),
+                                    child: Text(
+                                      widget.groupLabel!,
+                                      style: TextStyle(
+                                        color: widget.groupColor ?? const Color(0xFF6366F1),
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
+                              ],
                             ),
                           ),
                           if (_isHovered && !isDragging)

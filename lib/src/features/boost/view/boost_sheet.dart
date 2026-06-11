@@ -51,9 +51,9 @@ const _intents = [
 // ── Loading phrases ───────────────────────────────────────────────────────────
 
 const _phrases = [
-  'Thinking it through',
   'Working on it',
   'Putting it together',
+  'Crunching the numbers',
   'Almost there',
 ];
 
