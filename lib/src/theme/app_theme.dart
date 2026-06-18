@@ -1,18 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class AppTheme {
-  // Color palette
-  static const Color darkBackground = Color(0xFF0D1117);
-  static const Color cardBackground = Color(0xFF161B22);
-  static const Color surfaceBackground = Color(0xFF21262D);
-  static const Color borderColor = Color(0xFF30363D);
-  static const Color accentBlue = Color(0xFF2D7FF9);
-  static const Color accentGreen = Color(0xFF3FB950);
-  static const Color accentPurple = Color(0xFFBB86FC);
-  static const Color accentOrange = Color(0xFFFF9800);
-  static const Color accentRed = Color(0xFFF85149);
-  static const Color textPrimary = Color(0xFFC9D1D9);
-  static const Color textSecondary = Color(0xFF8B949E);
+  // Color palette based on Activities Brand Media Kit
+  static const Color darkBackground = Color(0xFF0F141B); // Charcoal
+  static const Color cardBackground = Color(0xFF0E1928); // Deep Navy
+  static const Color surfaceBackground = Color(0xFF334155); // Steel Gray
+  static const Color borderColor = Color(0xFF64748B); // Light Gray
+  static const Color accentBlue = Color(0xFF3882F6); // Primary Blue
+  static const Color accentGreen = Color(0xFF22C55E); // Success Green
+  static const Color accentPurple = Color(0xFF8B5CF6); // In Progress Purple
+  static const Color accentOrange = Color(0xFFD97706); // At Risk Orange
+  static const Color accentRed = Color(0xFFDC2626); // Overdue Red
+  static const Color textPrimary = Color(0xFFF8FAFC); // Off White
+  static const Color textSecondary = Color(0xFFCBD5E1); // Silver
 
   static ThemeData get dark {
     final colorScheme = ColorScheme.dark(
@@ -23,6 +24,17 @@ class AppTheme {
       onPrimary: Colors.white,
       onSecondary: Colors.white,
       onSurface: textPrimary,
+    );
+
+    final baseTextTheme = GoogleFonts.interTextTheme(
+      const TextTheme(
+        bodyLarge: TextStyle(color: textPrimary),
+        bodyMedium: TextStyle(color: textPrimary),
+        bodySmall: TextStyle(color: textSecondary),
+        titleLarge: TextStyle(color: textPrimary, fontWeight: FontWeight.w700),
+        titleMedium: TextStyle(color: textPrimary, fontWeight: FontWeight.w600),
+        titleSmall: TextStyle(color: textPrimary),
+      ),
     );
 
     return ThemeData(
@@ -73,18 +85,11 @@ class AppTheme {
         unselectedLabelColor: textSecondary,
         indicatorColor: accentBlue,
       ),
-      floatingActionButtonTheme: FloatingActionButtonThemeData(
+      floatingActionButtonTheme: const FloatingActionButtonThemeData(
         backgroundColor: accentBlue,
         foregroundColor: Colors.white,
       ),
-      textTheme: const TextTheme(
-        bodyLarge: TextStyle(color: textPrimary),
-        bodyMedium: TextStyle(color: textPrimary),
-        bodySmall: TextStyle(color: textSecondary),
-        titleLarge: TextStyle(color: textPrimary, fontWeight: FontWeight.w700),
-        titleMedium: TextStyle(color: textPrimary, fontWeight: FontWeight.w600),
-        titleSmall: TextStyle(color: textPrimary),
-      ),
+      textTheme: baseTextTheme,
     );
   }
 }
