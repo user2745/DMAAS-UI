@@ -47,7 +47,7 @@ class _LoginPageState extends State<LoginPage> {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('Password reset email sent! Check your inbox.'),
-              backgroundColor: Color(0xFF3FB950),
+              backgroundColor: AppTheme.accentGreen,
             ),
           );
           setState(() {
@@ -85,7 +85,7 @@ class _LoginPageState extends State<LoginPage> {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(state.error!),
-                backgroundColor: const Color(0xFFF85149),
+                backgroundColor: AppTheme.accentRed,
               ),
             );
           }

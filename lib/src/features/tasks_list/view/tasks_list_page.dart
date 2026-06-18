@@ -12,6 +12,8 @@ import '../widgets/task_list_table.dart';
 import '../widgets/view_toggle_buttons.dart';
 import '../../../widgets/animated_focus_text_field.dart';
 import '../../agent/view/agent_panel.dart';
+import '../../agent/view/smart_search_overlay.dart';
+import '../../agent/data/smart_search_service.dart';
 
 // Design Language: Multi-view list/calendar/roadmap with fluid transitions
 // See DESIGN_LANGUAGE.md for animation timings and layout rules
@@ -23,12 +25,106 @@ class TasksListPage extends StatefulWidget {
 }
 
 class _TasksListPageState extends State<TasksListPage> {
+  late final SmartSearchService _smartSearch;
+  SmartSearchResult? _searchResult;
+  bool _searchLoading = false;
+  String _lastQuery = '';
+
   @override
   void initState() {
     super.initState();
     final cubit = context.read<TasksListCubit>();
     cubit.loadInitialData();
     cubit.syncFromPreferences(context.read<PreferencesCubit>());
+
+    _smartSearch = SmartSearchService(
+      baseUrl: const String.fromEnvironment(
+        'AGENT_BASE_URL',
+        defaultValue: 'https://dmaas-agent-xr3swhwdua-uc.a.run.app',
+      ),
+      getAuthToken: () async {
+        // TODO: Get from Firebase auth provider
+        return null;
+      },
+    );
+  }
+
+  @override
+  void dispose() {
+    _smartSearch.dispose();
+    super.dispose();
+  }
+
+  void _onSearchChanged(String value) {
+    // Always do local filtering immediately
+    context.read<TasksListCubit>().setQuery(value);
+
+    // Debounce smart search for queries > 3 chars
+    if (value.trim().length >= 3) {
+      _smartSearch.debouncedSearch(
+        value,
+        onLoading: () {
+          if (mounted) setState(() => _searchLoading = true);
+        },
+        onResult: (result) {
+          if (mounted) {
+            setState(() {
+              _searchResult = result;
+              _searchLoading = false;
+              _lastQuery = value;
+            });
+          }
+        },
+        onError: (_) {
+          if (mounted) setState(() => _searchLoading = false);
+        },
+      );
+    } else {
+      setState(() {
+        _searchResult = null;
+        _searchLoading = false;
+      });
+    }
+  }
+
+  void _dismissSearch() {
+    setState(() {
+      _searchResult = null;
+      _searchLoading = false;
+    });
+  }
+
+  Widget _buildSearchBar({required TasksListState state}) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        AnimatedFocusTextField(
+          prefixIcon: const Icon(Icons.auto_awesome, size: 18),
+          hintText: 'Search tasks or ask anything...',
+          onChanged: _onSearchChanged,
+          onSubmitted: (value) => _handleSearchSubmit(context, value),
+        ),
+        // Smart search overlay
+        if (_searchLoading || _searchResult != null)
+          SmartSearchOverlay(
+            result: _searchResult,
+            isLoading: _searchLoading,
+            onTaskTap: (smartTask) {
+              // Find the real task by ID and open it
+              try {
+                final task = state.tasks.firstWhere(
+                  (t) => t.id == smartTask.id,
+                );
+                _showTaskDetails(context, task);
+              } catch (_) {
+                // Task not in local state
+              }
+              _dismissSearch();
+            },
+            onDismiss: _dismissSearch,
+          ),
+      ],
+    );
   }
 
   @override
@@ -86,14 +182,7 @@ class _TasksListPageState extends State<TasksListPage> {
               ),
               Padding(
                 padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
-                child: AnimatedFocusTextField(
-                  prefixIcon: const Icon(Icons.auto_awesome, size: 18),
-                  hintText: 'Search tasks or ask anything...',
-                  onChanged: (value) {
-                    context.read<TasksListCubit>().setQuery(value);
-                  },
-                  onSubmitted: (value) => _handleSearchSubmit(context, value),
-                ),
+                child: _buildSearchBar(state: state),
               ),
               Expanded(
                 child: Padding(
@@ -132,14 +221,7 @@ class _TasksListPageState extends State<TasksListPage> {
                 ),
                 const SizedBox(height: 12),
                 // Design Language: Focus-animated filter input (200ms)
-                AnimatedFocusTextField(
-                  prefixIcon: const Icon(Icons.auto_awesome, size: 18),
-                  hintText: 'Search tasks or ask anything...',
-                  onChanged: (value) {
-                    context.read<TasksListCubit>().setQuery(value);
-                  },
-                  onSubmitted: (value) => _handleSearchSubmit(context, value),
-                ),
+                _buildSearchBar(state: state),
                 const SizedBox(height: 24),
                 // Task Count
                 Padding(
@@ -286,6 +368,7 @@ class _TasksListPageState extends State<TasksListPage> {
 
   void _handleSearchSubmit(BuildContext context, String value) {
     if (_isAgentQuery(value)) {
+      _dismissSearch();
       AgentPanel.show(context, initialQuery: value);
     }
   }

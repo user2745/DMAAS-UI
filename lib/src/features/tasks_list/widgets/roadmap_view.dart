@@ -9,6 +9,7 @@ import '../../preferences/cubit/preferences_cubit.dart';
 import '../cubit/tasks_list_cubit.dart';
 import '../models/field.dart';
 import '../utils/workback_utils.dart';
+import 'package:DMAAS/src/theme/app_theme.dart';
 
 class RoadmapView extends StatefulWidget {
   const RoadmapView({
@@ -76,13 +77,13 @@ class _RoadmapViewState extends State<RoadmapView> {
                 Icon(
                   Icons.map_outlined,
                   size: 64,
-                  color: const Color(0xFF8B949E).withAlpha(100),
+                  color: AppTheme.textSecondary.withAlpha(100),
                 ),
                 const SizedBox(height: 16),
                 const Text(
                   'No tasks in roadmap',
                   style: TextStyle(
-                    color: Color(0xFFE6EDF3),
+                    color: AppTheme.textPrimary,
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
                   ),
@@ -91,7 +92,7 @@ class _RoadmapViewState extends State<RoadmapView> {
                 const Text(
                   'Plan your project timeline by adding tasks',
                   style: TextStyle(
-                    color: Color(0xFF8B949E),
+                    color: AppTheme.textSecondary,
                     fontSize: 14,
                   ),
                 ),
@@ -200,7 +201,7 @@ class _RoadmapViewState extends State<RoadmapView> {
                       ],
                     ),
                   ),
-                  const VerticalDivider(width: 1, color: Color(0xFF21262D)),
+                  const VerticalDivider(width: 1, color: AppTheme.surfaceBackground),
                   // ── Chart pane ────────────────────────────────────────
                   Expanded(
                     child: LayoutBuilder(
@@ -468,7 +469,7 @@ class _RoadmapViewState extends State<RoadmapView> {
       alignment: Alignment.centerLeft,
       decoration: const BoxDecoration(
         border:
-            Border(bottom: BorderSide(color: Color(0xFF21262D), width: 1)),
+            Border(bottom: BorderSide(color: AppTheme.surfaceBackground, width: 1)),
       ),
       padding: const EdgeInsets.only(right: 12),
       child: Row(
@@ -509,7 +510,7 @@ class _RoadmapViewState extends State<RoadmapView> {
       width: totalWidth,
       height: height,
       color: Theme.of(context).colorScheme.surface,
-      child: const Divider(height: 1, color: Color(0xFF21262D)),
+      child: const Divider(height: 1, color: AppTheme.surfaceBackground),
     );
   }
 
@@ -551,7 +552,7 @@ class _RoadmapViewState extends State<RoadmapView> {
         height: rowHeight,
         decoration: const BoxDecoration(
           border:
-              Border(bottom: BorderSide(color: Color(0xFF21262D), width: 1)),
+              Border(bottom: BorderSide(color: AppTheme.surfaceBackground, width: 1)),
         ),
         child: Stack(
           children: [

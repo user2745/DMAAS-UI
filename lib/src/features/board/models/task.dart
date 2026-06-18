@@ -2,6 +2,7 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
 
 import 'task_comment.dart';
+import 'package:DMAAS/src/theme/app_theme.dart';
 
 enum TaskStatus { todo, inProgress, done }
 
@@ -42,11 +43,11 @@ extension TaskStatusX on TaskStatus {
   Color get color {
     switch (this) {
       case TaskStatus.todo:
-        return const Color(0xFF58A6FF); // Blue
+        return AppTheme.accentBlue; // Blue
       case TaskStatus.inProgress:
-        return const Color(0xFFBB86FC); // Purple
+        return AppTheme.accentPurple; // Purple
       case TaskStatus.done:
-        return const Color(0xFF3FB950); // Green
+        return AppTheme.accentGreen; // Green
     }
   }
 

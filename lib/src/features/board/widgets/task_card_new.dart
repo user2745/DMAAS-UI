@@ -11,6 +11,7 @@ import 'task_editor_sheet.dart';
 import '../../../widgets/micro_interactions/status_momentum.dart';
 import '../../../widgets/micro_interactions/fade_delete_card.dart';
 import '../../boost/view/boost_sheet.dart';
+import 'package:DMAAS/src/theme/app_theme.dart';
 
 class TaskCard extends StatefulWidget {
   const TaskCard({
@@ -120,9 +121,9 @@ class _TaskCardState extends State<TaskCard> {
               // Card body: uniform border so borderRadius works
               Container(
                 decoration: BoxDecoration(
-                  color: const Color(0xFF161B22),
+                  color: AppTheme.cardBackground,
                   borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: const Color(0xFF30363D), width: 1),
+                  border: Border.all(color: AppTheme.borderColor, width: 1),
                 ),
                 // left: 17 = 3px accent + 14px inner gap; right: 6 for menu
                 child: Padding(
@@ -144,7 +145,7 @@ class _TaskCardState extends State<TaskCard> {
                                       fontWeight: FontWeight.w600,
                                       fontSize: 14,
                                       height: 1.35,
-                                      color: const Color(0xFFE6EDF3),
+                                      color: AppTheme.textPrimary,
                                     ),
                                     maxLines: 3,
                                     overflow: TextOverflow.ellipsis,
@@ -200,7 +201,7 @@ class _TaskCardState extends State<TaskCard> {
                         Text(
                           widget.task.description!,
                           style: theme.textTheme.bodySmall?.copyWith(
-                            color: const Color(0xFF8B949E),
+                            color: AppTheme.textSecondary,
                             fontSize: 12,
                             height: 1.4,
                           ),
@@ -223,7 +224,7 @@ class _TaskCardState extends State<TaskCard> {
                           const Icon(
                             Icons.drag_indicator,
                             size: 16,
-                            color: Color(0xFF30363D),
+                            color: AppTheme.borderColor,
                           ),
                         ],
                       ),
@@ -307,7 +308,7 @@ class _TaskCardState extends State<TaskCard> {
             children: [
               const Text('⚡', style: TextStyle(fontSize: 16)),
               const SizedBox(width: 8),
-              Text('Boost this task', style: theme.textTheme.labelMedium?.copyWith(color: const Color(0xFFBB86FC))),
+              Text('Boost this task', style: theme.textTheme.labelMedium?.copyWith(color: AppTheme.accentPurple)),
             ],
           ),
         ),
@@ -331,19 +332,19 @@ class _TaskCardState extends State<TaskCard> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
       decoration: BoxDecoration(
-        color: const Color(0xFF21262D),
+        color: AppTheme.surfaceBackground,
         borderRadius: BorderRadius.circular(6),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.schedule, size: 11, color: Color(0xFF8B949E)),
+          const Icon(Icons.schedule, size: 11, color: AppTheme.textSecondary),
           const SizedBox(width: 3),
           Text(
             _timeAgo(widget.task.createdAt),
             style: const TextStyle(
               fontSize: 11,
-              color: Color(0xFF8B949E),
+              color: AppTheme.textSecondary,
               fontWeight: FontWeight.w500,
             ),
           ),

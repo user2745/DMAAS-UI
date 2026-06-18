@@ -14,9 +14,9 @@
 - [ ] Update Android `applicationId` if applicable
 
 ### Hardcoded Colors (Cleanup)
-- [ ] `main_navigation_page.dart` — replace remaining `Color(0xFF...)` with `AppTheme` constants
-- [ ] Audit all files in `lib/src/features/` for hardcoded color hex values
-- [ ] Replace all instances with `AppTheme` constant references
+- [x] `main_navigation_page.dart` — replace remaining `Color(0xFF...)` with `AppTheme` constants
+- [x] Audit all files in `lib/src/features/` for hardcoded color hex values
+- [x] Replace all instances with `AppTheme` constant references
 
 ### Brand Assets
 - [x] Replace default Flutter favicon with Activities logo

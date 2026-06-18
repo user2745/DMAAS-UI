@@ -1,6 +1,10 @@
+import 'dart:convert';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 
 import '../../../theme/app_theme.dart';
+import 'web_url_opener.dart' if (dart.library.io) 'web_url_opener_stub.dart';
 
 /// Integration card data model.
 class _Integration {
@@ -11,6 +15,7 @@ class _Integration {
   final Color color;
   final List<String> scopes;
   bool connected;
+  String? email;
 
   _Integration({
     required this.id,
@@ -20,6 +25,7 @@ class _Integration {
     required this.color,
     required this.scopes,
     this.connected = false,
+    this.email,
   });
 }
 
@@ -32,6 +38,15 @@ class IntegrationsPage extends StatefulWidget {
 }
 
 class _IntegrationsPageState extends State<IntegrationsPage> {
+  // Agent service base URL — use env or default to local dev
+  static const String _agentBaseUrl = String.fromEnvironment(
+    'AGENT_BASE_URL',
+    defaultValue: 'http://localhost:8090',
+  );
+
+  // TODO: Get from auth provider
+  static const String _userId = 'dev-user';
+
   final List<_Integration> _integrations = [
     _Integration(
       id: 'gmail',
@@ -62,7 +77,39 @@ class _IntegrationsPageState extends State<IntegrationsPage> {
     ),
   ];
 
-  final bool _loading = false;
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchStatus();
+  }
+
+  /// Fetch current OAuth connection status from agent-service.
+  Future<void> _fetchStatus() async {
+    try {
+      final res = await http.get(
+        Uri.parse('$_agentBaseUrl/auth/google/status?userId=$_userId'),
+      );
+      if (res.statusCode == 200) {
+        final data = jsonDecode(res.body) as Map<String, dynamic>;
+        if (data['connected'] == true) {
+          final scopes = (data['scopes'] as String?) ?? '';
+          final email = data['email'] as String?;
+          setState(() {
+            for (final integration in _integrations) {
+              // If Google is connected, all integrations share the same token
+              integration.connected = true;
+              integration.email = email;
+            }
+          });
+        }
+      }
+    } catch (_) {
+      // Agent service unreachable — leave as disconnected
+    }
+    if (mounted) setState(() => _loading = false);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -200,7 +247,9 @@ class _IntegrationsPageState extends State<IntegrationsPage> {
                       ),
                       if (integration.connected)
                         Text(
-                          'Connected',
+                          integration.email != null
+                              ? 'Connected as ${integration.email}'
+                              : 'Connected',
                           style: TextStyle(
                             fontSize: 12,
                             color: AppTheme.accentGreen,
@@ -263,17 +312,24 @@ class _IntegrationsPageState extends State<IntegrationsPage> {
 
   Future<void> _toggleIntegration(_Integration integration, bool enable) async {
     if (enable) {
-      // TODO: Launch Google OAuth flow via agent-service
-      // For now, show a placeholder dialog
+      // All integrations share a single Google OAuth token — connect all at once
+      final anyConnected = _integrations.any((i) => i.connected);
+      if (anyConnected) {
+        // Already connected — just flip the UI state
+        setState(() => integration.connected = true);
+        return;
+      }
+
+      // Launch Google OAuth flow
       final confirmed = await showDialog<bool>(
         context: context,
         builder: (ctx) => AlertDialog(
           backgroundColor: AppTheme.cardBackground,
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: Text('Connect ${integration.name}?'),
+          title: Text('Connect Google Account?'),
           content: Text(
-            'This will redirect you to Google to authorize ${integration.name} access.',
+            'This will open a new window to authorize Gmail, Calendar, and Drive access. All three integrations share one Google sign-in.',
             style: TextStyle(color: AppTheme.textSecondary),
           ),
           actions: [
@@ -290,32 +346,106 @@ class _IntegrationsPageState extends State<IntegrationsPage> {
                 ),
               ),
               onPressed: () => Navigator.pop(ctx, true),
-              child: Text('Connect'),
+              child: Text('Connect with Google'),
             ),
           ],
         ),
       );
 
       if (confirmed == true) {
-        setState(() => integration.connected = true);
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('${integration.name} connected'),
-              backgroundColor: AppTheme.accentGreen,
-            ),
-          );
-        }
+        _launchOAuth();
       }
     } else {
       // Disconnect
-      setState(() => integration.connected = false);
+      await _disconnect();
+    }
+  }
+
+  /// Open the Google OAuth consent screen in a new browser tab/window.
+  void _launchOAuth() {
+    final url =
+        '$_agentBaseUrl/auth/google/start?userId=$_userId&integrations=gmail,calendar,drive';
+
+    if (kIsWeb) {
+      // Use universal_html or js_interop to open popup on web
+      // For now, show the URL to the user
+      _openUrlOnWeb(url);
+    }
+
+    // Start polling for connection status
+    _pollForConnection();
+  }
+
+  /// Open URL in a new window on web platform.
+  void _openUrlOnWeb(String url) {
+    openUrlInNewWindow(url);
+  }
+
+  /// Poll the agent-service status endpoint until Google is connected.
+  Future<void> _pollForConnection() async {
+    for (int i = 0; i < 60; i++) {
+      // Poll for up to 2 minutes
+      await Future.delayed(const Duration(seconds: 2));
+      if (!mounted) return;
+
+      try {
+        final res = await http.get(
+          Uri.parse('$_agentBaseUrl/auth/google/status?userId=$_userId'),
+        );
+        if (res.statusCode == 200) {
+          final data = jsonDecode(res.body) as Map<String, dynamic>;
+          if (data['connected'] == true) {
+            final email = data['email'] as String?;
+            setState(() {
+              for (final integration in _integrations) {
+                integration.connected = true;
+                integration.email = email;
+              }
+            });
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                      'Google connected${email != null ? ' as $email' : ''}'),
+                  backgroundColor: AppTheme.accentGreen,
+                ),
+              );
+            }
+            return;
+          }
+        }
+      } catch (_) {
+        // Continue polling
+      }
+    }
+  }
+
+  Future<void> _disconnect() async {
+    try {
+      await http.post(
+        Uri.parse('$_agentBaseUrl/auth/google/disconnect'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'userId': _userId}),
+      );
+    } catch (_) {
+      // Best effort
+    }
+
+    setState(() {
+      for (final integration in _integrations) {
+        integration.connected = false;
+        integration.email = null;
+      }
+    });
+
+    if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('${integration.name} disconnected'),
+          content: Text('Google disconnected'),
           backgroundColor: AppTheme.surfaceBackground,
         ),
       );
     }
   }
 }
+

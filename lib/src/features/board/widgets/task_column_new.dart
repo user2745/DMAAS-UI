@@ -5,6 +5,7 @@ import '../models/task.dart';
 import '../utils/drop_position_calculator.dart';
 import 'drag_gate_widget.dart';
 import 'task_card_new.dart';
+import 'package:DMAAS/src/theme/app_theme.dart';
 
 class TaskColumn extends StatefulWidget {
   const TaskColumn({
@@ -131,12 +132,12 @@ class _TaskColumnState extends State<TaskColumn> {
           decoration: BoxDecoration(
             color: _isDraggingOver
                 ? const Color(0xFF1C2128)
-                : const Color(0xFF161B22),
+                : AppTheme.cardBackground,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
               color: _isDraggingOver
                   ? widget.status.color
-                  : const Color(0xFF30363D),
+                  : AppTheme.borderColor,
               width: _isDraggingOver ? 2 : 1,
             ),
             boxShadow: _isDraggingOver
@@ -157,7 +158,7 @@ class _TaskColumnState extends State<TaskColumn> {
                 padding: const EdgeInsets.fromLTRB(14, 14, 8, 12),
                 child: _buildHeader(context),
               ),
-              const Divider(height: 1, thickness: 1, color: Color(0xFF21262D)),
+              const Divider(height: 1, thickness: 1, color: AppTheme.surfaceBackground),
               const SizedBox(height: 8),
               Flexible(
                 child: widget.tasks.isEmpty
@@ -166,7 +167,7 @@ class _TaskColumnState extends State<TaskColumn> {
                         child: RawScrollbar(
                           thickness: 4,
                           radius: const Radius.circular(2),
-                          thumbColor: const Color(0xFF30363D),
+                          thumbColor: AppTheme.borderColor,
                           child: SingleChildScrollView(
                             controller: _scrollController,
                             padding: const EdgeInsets.fromLTRB(10, 0, 10, 12),
@@ -350,7 +351,7 @@ class _TaskColumnState extends State<TaskColumn> {
           child: Text(
             widget.status.label,
             style: const TextStyle(
-              color: Color(0xFFE6EDF3),
+              color: AppTheme.textPrimary,
               fontWeight: FontWeight.w700,
               fontSize: 14,
               letterSpacing: 0.3,
@@ -381,7 +382,7 @@ class _TaskColumnState extends State<TaskColumn> {
           IconButton(
             tooltip: 'Collapse column',
             onPressed: widget.onCollapse,
-            icon: const Icon(Icons.chevron_left, color: Color(0xFF8B949E)),
+            icon: const Icon(Icons.chevron_left, color: AppTheme.textSecondary),
             iconSize: 18,
             visualDensity: VisualDensity.compact,
             padding: EdgeInsets.zero,
@@ -405,10 +406,10 @@ class _EmptyColumn extends StatelessWidget {
         width: double.infinity,
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
-          color: const Color(0xFF21262D),
+          color: AppTheme.surfaceBackground,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: const Color(0xFF30363D),
+            color: AppTheme.borderColor,
             style: BorderStyle.solid,
             width: 1,
           ),
@@ -418,14 +419,14 @@ class _EmptyColumn extends StatelessWidget {
           children: [
             Icon(
               Icons.inbox_outlined,
-              color: const Color(0xFF8B949E).withAlpha(120),
+              color: AppTheme.textSecondary.withAlpha(120),
               size: 36,
             ),
             const SizedBox(height: 10),
             Text(
               'No items in ${status.label}',
               style: const TextStyle(
-                color: Color(0xFF8B949E),
+                color: AppTheme.textSecondary,
                 fontWeight: FontWeight.w600,
                 fontSize: 13,
               ),
@@ -435,7 +436,7 @@ class _EmptyColumn extends StatelessWidget {
             const Text(
               'Drag tasks here to get started',
               style: TextStyle(
-                color: Color(0xFF8B949E),
+                color: AppTheme.textSecondary,
                 fontSize: 11,
               ),
               textAlign: TextAlign.center,
@@ -486,7 +487,7 @@ class _AddTaskButtonState extends State<_AddTaskButton> {
             border: Border.all(
               color: _isHovered 
                   ? widget.status.color.withAlpha(80) 
-                  : const Color(0xFF30363D).withAlpha(150),
+                  : AppTheme.borderColor.withAlpha(150),
               width: 1,
             ),
           ),
@@ -497,7 +498,7 @@ class _AddTaskButtonState extends State<_AddTaskButton> {
                 size: 18,
                 color: _isHovered 
                     ? widget.status.color 
-                    : const Color(0xFF8B949E),
+                    : AppTheme.textSecondary,
               ),
               const SizedBox(width: 8),
               Text(
@@ -505,7 +506,7 @@ class _AddTaskButtonState extends State<_AddTaskButton> {
                 style: TextStyle(
                   color: _isHovered 
                       ? widget.status.color 
-                      : const Color(0xFF8B949E),
+                      : AppTheme.textSecondary,
                   fontWeight: FontWeight.w600,
                   fontSize: 13,
                 ),

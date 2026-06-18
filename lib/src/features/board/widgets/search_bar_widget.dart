@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../cubit/search_cubit.dart';
 import '../cubit/task_board_cubit.dart';
+import 'package:DMAAS/src/theme/app_theme.dart';
 
 typedef OnFieldFilterChanged = Function(FieldFilter? filter);
 
@@ -116,17 +117,17 @@ class _SearchBarWidgetState extends State<SearchBarWidget> {
                   duration: const Duration(milliseconds: 200),
                   height: 40,
                   decoration: BoxDecoration(
-                    color: const Color(0xFF21262D),
+                    color: AppTheme.surfaceBackground,
                     borderRadius: BorderRadius.circular(10),
                     border: Border.all(
                       color: _isFocused 
-                          ? const Color(0xFFBB86FC) 
-                          : const Color(0xFF30363D), 
+                          ? AppTheme.accentPurple 
+                          : AppTheme.borderColor, 
                       width: _isFocused ? 1.5 : 1,
                     ),
                     boxShadow: _isFocused ? [
                       BoxShadow(
-                        color: const Color(0xFFBB86FC).withAlpha(30),
+                        color: AppTheme.accentPurple.withAlpha(30),
                         blurRadius: 8,
                         spreadRadius: 1,
                       )
@@ -137,24 +138,24 @@ class _SearchBarWidgetState extends State<SearchBarWidget> {
                     focusNode: _focusNode,
                     onChanged: widget.onChanged,
                     style: const TextStyle(
-                      color: Color(0xFFE6EDF3),
+                      color: AppTheme.textPrimary,
                       fontSize: 14,
                     ),
                     decoration: InputDecoration(
                       hintText: 'Search tasks…',
                       hintStyle: const TextStyle(
-                        color: Color(0xFF8B949E),
+                        color: AppTheme.textSecondary,
                         fontSize: 14,
                       ),
                       prefixIcon: const Icon(
                         Icons.search,
                         size: 18,
-                        color: Color(0xFF8B949E),
+                        color: AppTheme.textSecondary,
                       ),
                       suffixIcon: _controller.text.isNotEmpty
                           ? IconButton(
                               icon: const Icon(Icons.clear, size: 16),
-                              color: const Color(0xFF8B949E),
+                              color: AppTheme.textSecondary,
                               onPressed: () {
                                 _controller.clear();
                                 widget.onClear();
@@ -181,13 +182,13 @@ class _SearchBarWidgetState extends State<SearchBarWidget> {
                     height: 40,
                     decoration: BoxDecoration(
                       color: _selectedFieldFilters.isNotEmpty
-                          ? const Color(0xFFBB86FC).withAlpha(25)
-                          : const Color(0xFF21262D),
+                          ? AppTheme.accentPurple.withAlpha(25)
+                          : AppTheme.surfaceBackground,
                       borderRadius: BorderRadius.circular(10),
                       border: Border.all(
                         color: _selectedFieldFilters.isNotEmpty
-                            ? const Color(0xFFBB86FC).withAlpha(80)
-                            : const Color(0xFF30363D),
+                            ? AppTheme.accentPurple.withAlpha(80)
+                            : AppTheme.borderColor,
                         width: 1,
                       ),
                     ),
@@ -197,8 +198,8 @@ class _SearchBarWidgetState extends State<SearchBarWidget> {
                         Icons.filter_list,
                         size: 18,
                         color: _selectedFieldFilters.isNotEmpty
-                            ? const Color(0xFFBB86FC)
-                            : const Color(0xFF8B949E),
+                            ? AppTheme.accentPurple
+                            : AppTheme.textSecondary,
                       ),
                       onPressed: _toggleFilterPanel,
                       tooltip: 'Add field filters',
@@ -212,7 +213,7 @@ class _SearchBarWidgetState extends State<SearchBarWidget> {
                         width: 14,
                         height: 14,
                         decoration: const BoxDecoration(
-                          color: Color(0xFFBB86FC),
+                          color: AppTheme.accentPurple,
                           shape: BoxShape.circle,
                         ),
                         child: Text(
@@ -234,22 +235,22 @@ class _SearchBarWidgetState extends State<SearchBarWidget> {
                 height: 40,
                 padding: const EdgeInsets.symmetric(horizontal: 10),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF21262D),
+                  color: AppTheme.surfaceBackground,
                   borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: const Color(0xFF30363D), width: 1),
+                  border: Border.all(color: AppTheme.borderColor, width: 1),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.group_work_outlined, size: 16, color: Color(0xFF8B949E)),
+                    const Icon(Icons.group_work_outlined, size: 16, color: AppTheme.textSecondary),
                     const SizedBox(width: 6),
                     DropdownButton<String>(
                       value: widget.groupType == BoardGroupType.field
                           ? 'field:${widget.groupFieldId ?? ''}'
                           : widget.groupType.name,
                       underline: const SizedBox(),
-                      dropdownColor: const Color(0xFF21262D),
-                      style: const TextStyle(color: Color(0xFFE6EDF3), fontSize: 13),
+                      dropdownColor: AppTheme.surfaceBackground,
+                      style: const TextStyle(color: AppTheme.textPrimary, fontSize: 13),
                       isDense: true,
                       onChanged: (value) {
                         if (value == null) return;
@@ -288,22 +289,22 @@ class _SearchBarWidgetState extends State<SearchBarWidget> {
                   height: 40,
                   padding: const EdgeInsets.symmetric(horizontal: 14),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFBB86FC).withAlpha(30),
+                    color: AppTheme.accentPurple.withAlpha(30),
                     borderRadius: BorderRadius.circular(10),
                     border: Border.all(
-                      color: const Color(0xFFBB86FC).withAlpha(100),
+                      color: AppTheme.accentPurple.withAlpha(100),
                       width: 1,
                     ),
                   ),
                   child: const Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.add, size: 16, color: Color(0xFFBB86FC)),
+                      Icon(Icons.add, size: 16, color: AppTheme.accentPurple),
                       SizedBox(width: 5),
                       Text(
                         'New Task',
                         style: TextStyle(
-                          color: Color(0xFFBB86FC),
+                          color: AppTheme.accentPurple,
                           fontWeight: FontWeight.w600,
                           fontSize: 13,
                         ),
@@ -322,8 +323,8 @@ class _SearchBarWidgetState extends State<SearchBarWidget> {
             decoration: const BoxDecoration(
               color: Color(0xFF1C2128),
               border: Border(
-                top: BorderSide(color: Color(0xFF30363D), width: 1),
-                bottom: BorderSide(color: Color(0xFF30363D), width: 1),
+                top: BorderSide(color: AppTheme.borderColor, width: 1),
+                bottom: BorderSide(color: AppTheme.borderColor, width: 1),
               ),
             ),
             child: Column(
@@ -336,7 +337,7 @@ class _SearchBarWidgetState extends State<SearchBarWidget> {
                     Text(
                       'Filter by Field',
                       style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        color: const Color(0xFFE6EDF3),
+                        color: AppTheme.textPrimary,
                         fontSize: 13,
                       ),
                     ),

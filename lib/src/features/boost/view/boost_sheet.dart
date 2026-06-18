@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../cubit/boost_cubit.dart';
 import '../cubit/boost_state.dart';
+import 'package:DMAAS/src/theme/app_theme.dart';
 
 // ── Intent model ─────────────────────────────────────────────────────────────
 
@@ -133,7 +134,7 @@ class _BoostSheetBody extends StatelessWidget {
       builder: (_, scrollController) {
         return Container(
           decoration: const BoxDecoration(
-            color: Color(0xFF161B22),
+            color: AppTheme.cardBackground,
             borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
           ),
           child: Column(
@@ -145,7 +146,7 @@ class _BoostSheetBody extends StatelessWidget {
                   width: 40,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: const Color(0xFF30363D),
+                    color: AppTheme.borderColor,
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -166,14 +167,14 @@ class _BoostSheetBody extends StatelessWidget {
                             style: TextStyle(
                               fontSize: 17,
                               fontWeight: FontWeight.w700,
-                              color: Color(0xFFE6EDF3),
+                              color: AppTheme.textPrimary,
                             ),
                           ),
                           Text(
                             taskTitle,
                             style: const TextStyle(
                               fontSize: 12,
-                              color: Color(0xFF8B949E),
+                              color: AppTheme.textSecondary,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -187,15 +188,15 @@ class _BoostSheetBody extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 10, vertical: 4),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF21262D),
+                          color: AppTheme.surfaceBackground,
                           borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: const Color(0xFF30363D)),
+                          border: Border.all(color: AppTheme.borderColor),
                         ),
                         child: Text(
                           '${state.credits} left',
                           style: const TextStyle(
                             fontSize: 12,
-                            color: Color(0xFFBB86FC),
+                            color: AppTheme.accentPurple,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
@@ -203,7 +204,7 @@ class _BoostSheetBody extends StatelessWidget {
                   ],
                 ),
               ),
-              const Divider(height: 24, color: Color(0xFF21262D)),
+              const Divider(height: 24, color: AppTheme.surfaceBackground),
               // Body
               Expanded(
                 child: SingleChildScrollView(
@@ -243,7 +244,7 @@ class _BoostSheetBody extends StatelessWidget {
           'What do you need?',
           style: TextStyle(
             fontSize: 14,
-            color: Color(0xFF8B949E),
+            color: AppTheme.textSecondary,
             fontWeight: FontWeight.w500,
           ),
         ),
@@ -264,9 +265,9 @@ class _BoostSheetBody extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: const Color(0xFF21262D),
+              color: AppTheme.surfaceBackground,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: const Color(0xFFBB86FC).withAlpha(60)),
+              border: Border.all(color: AppTheme.accentPurple.withAlpha(60)),
             ),
             child: const Row(
               children: [
@@ -277,7 +278,7 @@ class _BoostSheetBody extends StatelessWidget {
                     'You\'ve used all your boost credits. More coming soon.',
                     style: TextStyle(
                       fontSize: 13,
-                      color: Color(0xFF8B949E),
+                      color: AppTheme.textSecondary,
                       height: 1.4,
                     ),
                   ),
@@ -309,13 +310,13 @@ class _IntentTile extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           decoration: BoxDecoration(
-            color: const Color(0xFF21262D),
+            color: AppTheme.surfaceBackground,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: const Color(0xFF30363D)),
+            border: Border.all(color: AppTheme.borderColor),
           ),
           child: Row(
             children: [
-              Icon(intent.icon, size: 20, color: const Color(0xFFBB86FC)),
+              Icon(intent.icon, size: 20, color: AppTheme.accentPurple),
               const SizedBox(width: 14),
               Expanded(
                 child: Column(
@@ -326,7 +327,7 @@ class _IntentTile extends StatelessWidget {
                       style: const TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w600,
-                        color: Color(0xFFE6EDF3),
+                        color: AppTheme.textPrimary,
                       ),
                     ),
                     const SizedBox(height: 2),
@@ -334,14 +335,14 @@ class _IntentTile extends StatelessWidget {
                       intent.subtitle,
                       style: const TextStyle(
                         fontSize: 12,
-                        color: Color(0xFF8B949E),
+                        color: AppTheme.textSecondary,
                       ),
                     ),
                   ],
                 ),
               ),
               const Icon(Icons.chevron_right,
-                  size: 18, color: Color(0xFF30363D)),
+                  size: 18, color: AppTheme.borderColor),
             ],
           ),
         ),
@@ -421,7 +422,7 @@ class _LoadingViewState extends State<_LoadingView>
             '${_phrases[_phraseIndex]}$dotsStr',
             style: const TextStyle(
               fontSize: 16,
-              color: Color(0xFF8B949E),
+              color: AppTheme.textSecondary,
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -448,17 +449,17 @@ class _ResultView extends StatelessWidget {
           width: double.infinity,
           padding: const EdgeInsets.all(18),
           decoration: BoxDecoration(
-            color: const Color(0xFF21262D),
+            color: AppTheme.surfaceBackground,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: const Color(0xFFBB86FC).withAlpha(80),
+              color: AppTheme.accentPurple.withAlpha(80),
             ),
           ),
           child: SelectableText(
             result,
             style: const TextStyle(
               fontSize: 14,
-              color: Color(0xFFE6EDF3),
+              color: AppTheme.textPrimary,
               height: 1.6,
             ),
           ),
@@ -472,8 +473,8 @@ class _ResultView extends StatelessWidget {
                 icon: const Icon(Icons.arrow_back, size: 16),
                 label: const Text('Try another'),
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: const Color(0xFF8B949E),
-                  side: const BorderSide(color: Color(0xFF30363D)),
+                  foregroundColor: AppTheme.textSecondary,
+                  side: const BorderSide(color: AppTheme.borderColor),
                   padding: const EdgeInsets.symmetric(vertical: 12),
                 ),
               ),
@@ -485,7 +486,7 @@ class _ResultView extends StatelessWidget {
                 icon: const Icon(Icons.check, size: 16),
                 label: const Text('Done'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFBB86FC),
+                  backgroundColor: AppTheme.accentPurple,
                   foregroundColor: Colors.black,
                   padding: const EdgeInsets.symmetric(vertical: 12),
                 ),
@@ -518,7 +519,7 @@ class _ErrorView extends StatelessWidget {
           textAlign: TextAlign.center,
           style: const TextStyle(
             fontSize: 14,
-            color: Color(0xFF8B949E),
+            color: AppTheme.textSecondary,
             height: 1.5,
           ),
         ),
@@ -526,8 +527,8 @@ class _ErrorView extends StatelessWidget {
         ElevatedButton(
           onPressed: onBack,
           style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF21262D),
-            foregroundColor: const Color(0xFFE6EDF3),
+            backgroundColor: AppTheme.surfaceBackground,
+            foregroundColor: AppTheme.textPrimary,
           ),
           child: const Text('Go back'),
         ),

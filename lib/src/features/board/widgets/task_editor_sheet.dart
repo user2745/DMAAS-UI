@@ -10,6 +10,7 @@ import '../cubit/task_board_cubit.dart';
 import '../models/task.dart';
 import '../../boost/view/boost_sheet.dart';
 import '../../../widgets/animated_focus_text_field.dart';
+import 'package:DMAAS/src/theme/app_theme.dart';
 
 class TaskEditorSheet extends StatefulWidget {
   const TaskEditorSheet({
@@ -160,11 +161,11 @@ class _TaskEditorSheetState extends State<TaskEditorSheet> {
                           icon: const Text('⚡', style: TextStyle(fontSize: 14)),
                           label: const Text('Boost with AI'),
                           style: FilledButton.styleFrom(
-                            backgroundColor: const Color(0xFFBB86FC).withAlpha(40),
-                            foregroundColor: const Color(0xFFBB86FC),
+                            backgroundColor: AppTheme.accentPurple.withAlpha(40),
+                            foregroundColor: AppTheme.accentPurple,
                             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
                             minimumSize: const Size(0, 32),
-                            side: BorderSide(color: const Color(0xFFBB86FC).withAlpha(80)),
+                            side: BorderSide(color: AppTheme.accentPurple.withAlpha(80)),
                           ),
                         ),
                       ),

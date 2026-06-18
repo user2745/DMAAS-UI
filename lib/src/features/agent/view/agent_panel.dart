@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../cubit/agent_cubit.dart';
 import '../cubit/agent_state.dart';
+import 'package:DMAAS/src/theme/app_theme.dart';
 
 /// Conversational agent panel — slide-up bottom sheet.
 class AgentPanel extends StatelessWidget {
@@ -113,7 +114,7 @@ class _AgentPanelBodyState extends State<_AgentPanelBody> {
       builder: (_, sheetScrollController) {
         return Container(
           decoration: const BoxDecoration(
-            color: Color(0xFF161B22),
+            color: AppTheme.cardBackground,
             borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
           ),
           child: Column(
@@ -125,7 +126,7 @@ class _AgentPanelBodyState extends State<_AgentPanelBody> {
                   width: 40,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: const Color(0xFF30363D),
+                    color: AppTheme.borderColor,
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -143,7 +144,7 @@ class _AgentPanelBodyState extends State<_AgentPanelBody> {
                         style: TextStyle(
                           fontSize: 17,
                           fontWeight: FontWeight.w700,
-                          color: Color(0xFFE6EDF3),
+                          color: AppTheme.textPrimary,
                         ),
                       ),
                     ),
@@ -151,21 +152,21 @@ class _AgentPanelBodyState extends State<_AgentPanelBody> {
                       IconButton(
                         onPressed: () => context.read<AgentCubit>().cancel(),
                         icon: const Icon(Icons.stop_circle_outlined,
-                            color: Color(0xFFFF6B6B)),
+                            color: AppTheme.accentRed),
                         tooltip: 'Stop',
                         iconSize: 22,
                       ),
                     IconButton(
                       onPressed: () => context.read<AgentCubit>().reset(),
                       icon: const Icon(Icons.refresh,
-                          color: Color(0xFF8B949E)),
+                          color: AppTheme.textSecondary),
                       tooltip: 'New conversation',
                       iconSize: 20,
                     ),
                   ],
                 ),
               ),
-              const Divider(height: 16, color: Color(0xFF21262D)),
+              const Divider(height: 16, color: AppTheme.surfaceBackground),
               // Messages
               Expanded(
                 child: ListView.builder(
@@ -199,7 +200,7 @@ class _AgentPanelBodyState extends State<_AgentPanelBody> {
                 Container(
                   padding:
                       const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                  color: const Color(0xFF21262D),
+                  color: AppTheme.surfaceBackground,
                   child: Row(
                     children: [
                       const SizedBox(
@@ -207,7 +208,7 @@ class _AgentPanelBodyState extends State<_AgentPanelBody> {
                         height: 14,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
-                          color: Color(0xFFBB86FC),
+                          color: AppTheme.accentPurple,
                         ),
                       ),
                       const SizedBox(width: 8),
@@ -215,7 +216,7 @@ class _AgentPanelBodyState extends State<_AgentPanelBody> {
                         _toolDisplayName(widget.state.currentTool),
                         style: const TextStyle(
                           fontSize: 12,
-                          color: Color(0xFF8B949E),
+                          color: AppTheme.textSecondary,
                           fontStyle: FontStyle.italic,
                         ),
                       ),
@@ -226,9 +227,9 @@ class _AgentPanelBodyState extends State<_AgentPanelBody> {
               Container(
                 padding: const EdgeInsets.fromLTRB(16, 8, 8, 16),
                 decoration: const BoxDecoration(
-                  color: Color(0xFF0D1117),
+                  color: AppTheme.darkBackground,
                   border: Border(
-                    top: BorderSide(color: Color(0xFF21262D)),
+                    top: BorderSide(color: AppTheme.surfaceBackground),
                   ),
                 ),
                 child: SafeArea(
@@ -240,7 +241,7 @@ class _AgentPanelBodyState extends State<_AgentPanelBody> {
                           focusNode: _inputFocus,
                           onSubmitted: (_) => _sendMessage(),
                           style: const TextStyle(
-                            color: Color(0xFFE6EDF3),
+                            color: AppTheme.textPrimary,
                             fontSize: 14,
                           ),
                           decoration: InputDecoration(
@@ -248,25 +249,25 @@ class _AgentPanelBodyState extends State<_AgentPanelBody> {
                                 ? 'Ask anything about your tasks...'
                                 : 'Follow up...',
                             hintStyle: const TextStyle(
-                              color: Color(0xFF484F58),
+                              color: AppTheme.borderColor,
                               fontSize: 14,
                             ),
                             filled: true,
-                            fillColor: const Color(0xFF161B22),
+                            fillColor: AppTheme.cardBackground,
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
                               borderSide:
-                                  const BorderSide(color: Color(0xFF30363D)),
+                                  const BorderSide(color: AppTheme.borderColor),
                             ),
                             enabledBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
                               borderSide:
-                                  const BorderSide(color: Color(0xFF30363D)),
+                                  const BorderSide(color: AppTheme.borderColor),
                             ),
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
                               borderSide:
-                                  const BorderSide(color: Color(0xFFBB86FC)),
+                                  const BorderSide(color: AppTheme.accentPurple),
                             ),
                             contentPadding: const EdgeInsets.symmetric(
                               horizontal: 16,
@@ -283,11 +284,11 @@ class _AgentPanelBodyState extends State<_AgentPanelBody> {
                           icon: Icon(
                             Icons.send_rounded,
                             color: widget.state.isBusy
-                                ? const Color(0xFF484F58)
-                                : const Color(0xFFBB86FC),
+                                ? AppTheme.borderColor
+                                : AppTheme.accentPurple,
                           ),
                           style: IconButton.styleFrom(
-                            backgroundColor: const Color(0xFF21262D),
+                            backgroundColor: AppTheme.surfaceBackground,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
@@ -346,19 +347,19 @@ class _MessageBubble extends StatelessWidget {
           ),
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
           decoration: BoxDecoration(
-            color: isUser ? const Color(0xFFBB86FC).withAlpha(30) : const Color(0xFF21262D),
+            color: isUser ? AppTheme.accentPurple.withAlpha(30) : AppTheme.surfaceBackground,
             borderRadius: BorderRadius.circular(14),
             border: Border.all(
               color: isUser
-                  ? const Color(0xFFBB86FC).withAlpha(60)
-                  : const Color(0xFF30363D),
+                  ? AppTheme.accentPurple.withAlpha(60)
+                  : AppTheme.borderColor,
             ),
           ),
           child: SelectableText(
             message.content,
             style: TextStyle(
               fontSize: 14,
-              color: isUser ? const Color(0xFFE6EDF3) : const Color(0xFFC9D1D9),
+              color: isUser ? AppTheme.textPrimary : AppTheme.textPrimary,
               height: 1.5,
             ),
           ),
@@ -389,9 +390,9 @@ class _StreamingBubble extends StatelessWidget {
           ),
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
           decoration: BoxDecoration(
-            color: const Color(0xFF21262D),
+            color: AppTheme.surfaceBackground,
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: const Color(0xFF30363D)),
+            border: Border.all(color: AppTheme.borderColor),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -402,7 +403,7 @@ class _StreamingBubble extends StatelessWidget {
                   text,
                   style: const TextStyle(
                     fontSize: 14,
-                    color: Color(0xFFC9D1D9),
+                    color: AppTheme.textPrimary,
                     height: 1.5,
                   ),
                 ),
@@ -452,7 +453,7 @@ class _CursorBlinkState extends State<_CursorBlink>
       child: Container(
         width: 2,
         height: 16,
-        color: const Color(0xFFBB86FC),
+        color: AppTheme.accentPurple,
       ),
     );
   }
@@ -472,10 +473,10 @@ class _ToolIndicator extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
-          color: const Color(0xFF21262D),
+          color: AppTheme.surfaceBackground,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
-            color: const Color(0xFFBB86FC).withAlpha(40),
+            color: AppTheme.accentPurple.withAlpha(40),
           ),
         ),
         child: Row(
@@ -486,7 +487,7 @@ class _ToolIndicator extends StatelessWidget {
               height: 16,
               child: CircularProgressIndicator(
                 strokeWidth: 2,
-                color: Color(0xFFBB86FC),
+                color: AppTheme.accentPurple,
               ),
             ),
             const SizedBox(width: 10),
@@ -494,7 +495,7 @@ class _ToolIndicator extends StatelessWidget {
               toolName,
               style: const TextStyle(
                 fontSize: 13,
-                color: Color(0xFF8B949E),
+                color: AppTheme.textSecondary,
                 fontStyle: FontStyle.italic,
               ),
             ),

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
-
+import '../../../theme/app_theme.dart';
 // Design Language: Dark-themed data table with sticky headers and inline editing
 // See lib/src/theme/app_theme.dart for table row and container backgrounds
 // Uses systemic spacing and hover feedback for desktop/touch parity
@@ -77,7 +77,7 @@ class _TaskListTableState extends State<TaskListTable> {
 
   ({String label, Color color}) _derivedStatus(Task task) {
     if (task.status == TaskStatus.done) {
-      return (label: 'Completed', color: const Color(0xFF3FB950));
+      return (label: 'Completed', color: AppTheme.accentGreen);
     }
     final now = DateTime.now();
     if (task.dueDate != null) {
@@ -87,9 +87,9 @@ class _TaskListTableState extends State<TaskListTable> {
       return (label: 'Upcoming', color: const Color(0xFF8B5CF6));
     }
     if (task.status == TaskStatus.inProgress) {
-      return (label: 'In Progress', color: const Color(0xFF58A6FF));
+      return (label: 'In Progress', color: AppTheme.accentBlue);
     }
-    return (label: 'To Do', color: const Color(0xFF58A6FF));
+    return (label: 'To Do', color: AppTheme.accentBlue);
   }
 
   double get _tableWidth {
@@ -180,9 +180,9 @@ class _TaskListTableState extends State<TaskListTable> {
         return Container(
           width: double.infinity,
           decoration: BoxDecoration(
-            color: const Color(0xFF0D1117),
+            color: AppTheme.darkBackground,
             borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: const Color(0xFF30363D), width: 1),
+            border: Border.all(color: AppTheme.borderColor, width: 1),
           ),
           child: SingleChildScrollView(
             scrollDirection: Axis.horizontal,
@@ -229,7 +229,7 @@ class _TaskListTableState extends State<TaskListTable> {
                       width: 1,
                       height: 24,
                       margin: const EdgeInsets.symmetric(horizontal: 8),
-                      color: const Color(0xFF30363D),
+                      color: AppTheme.borderColor,
                     ),
                     ...widget.fields.asMap().entries.map((entry) {
                       final fieldIndex = entry.key;
@@ -365,7 +365,7 @@ class _TaskListTableState extends State<TaskListTable> {
                   ],
                 ),
               ),
-              const Divider(height: 1, color: Color(0xFF30363D)),
+              const Divider(height: 1, color: AppTheme.borderColor),
               Expanded(
                 child: ReorderableListView.builder(
                   buildDefaultDragHandles: false,
@@ -383,9 +383,9 @@ class _TaskListTableState extends State<TaskListTable> {
                     onExit: (_) => setState(() => _hoveredRowIndex = null),
                     child: Container(
                       decoration: BoxDecoration(
-                        color: isHovered ? const Color(0xFF161B22) : const Color(0xFF0D1117),
+                        color: isHovered ? AppTheme.cardBackground : AppTheme.darkBackground,
                         border: const Border(
-                          bottom: BorderSide(color: Color(0xFF21262D), width: 1),
+                          bottom: BorderSide(color: AppTheme.surfaceBackground, width: 1),
                         ),
                       ),
                       padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
@@ -401,14 +401,14 @@ class _TaskListTableState extends State<TaskListTable> {
                                   child: Icon(
                                     Icons.drag_indicator,
                                     size: 18,
-                                    color: const Color(0xFF484F58),
+                                    color: AppTheme.borderColor,
                                   ),
                                 ),
                                 const SizedBox(width: 4),
                                 Expanded(
                                   child: Text(
                                     task.ticketNumber != null ? 'T-${task.ticketNumber}' : 'T-${index + 1}',
-                                    style: const TextStyle(color: Color(0xFF8B949E), fontSize: 13),
+                                    style: const TextStyle(color: AppTheme.textSecondary, fontSize: 13),
                                     overflow: TextOverflow.ellipsis,
                                   ),
                                 ),
@@ -426,9 +426,9 @@ class _TaskListTableState extends State<TaskListTable> {
                                 style: const TextStyle(
                                   fontSize: 14,
                                   fontWeight: FontWeight.w500,
-                                  color: Color(0xFFE6EDF3),
+                                  color: AppTheme.textPrimary,
                                   decoration: TextDecoration.underline,
-                                  decorationColor: Color(0xFF30363D),
+                                  decorationColor: AppTheme.borderColor,
                                 ),
                               ),
                             ),
@@ -520,7 +520,7 @@ class _TaskListTableState extends State<TaskListTable> {
                                 ),
                                 decoration: BoxDecoration(
                                   borderRadius: BorderRadius.circular(4),
-                                  color: isHovered ? const Color(0xFF21262D) : Colors.transparent,
+                                  color: isHovered ? AppTheme.surfaceBackground : Colors.transparent,
                                 ),
                                 child: Row(
                                   children: [
@@ -529,14 +529,14 @@ class _TaskListTableState extends State<TaskListTable> {
                                         _formatDate(task.dueDate),
                                         style: const TextStyle(
                                           fontSize: 13,
-                                          color: Color(0xFF8B949E),
+                                          color: AppTheme.textSecondary,
                                         ),
                                       ),
                                     ),
                                     const Icon(
                                       Icons.calendar_today,
                                       size: 14,
-                                      color: Color(0xFF8B949E),
+                                      color: AppTheme.textSecondary,
                                     ),
                                   ],
                                 ),
@@ -557,7 +557,7 @@ class _TaskListTableState extends State<TaskListTable> {
                                       icon: const Icon(
                                         Icons.edit,
                                         size: 16,
-                                        color: Color(0xFF8B949E),
+                                        color: AppTheme.textSecondary,
                                       ),
                                       padding: EdgeInsets.zero,
                                       onPressed: () {
@@ -579,7 +579,7 @@ class _TaskListTableState extends State<TaskListTable> {
                                       icon: const Icon(
                                         Icons.delete,
                                         size: 16,
-                                        color: Color(0xFF8B949E),
+                                        color: AppTheme.textSecondary,
                                       ),
                                       padding: EdgeInsets.zero,
                                       onPressed: () {
@@ -596,7 +596,7 @@ class _TaskListTableState extends State<TaskListTable> {
                             width: 1,
                             height: 24,
                             margin: const EdgeInsets.symmetric(horizontal: 8),
-                            color: const Color(0xFF30363D),
+                            color: AppTheme.borderColor,
                           ),
                           ...widget.fields.map((field) {
                             final value =
@@ -632,9 +632,9 @@ class _TaskListTableState extends State<TaskListTable> {
   Widget _buildQuickAddRow(double titleWidth) {
     return Container(
       decoration: const BoxDecoration(
-        color: Color(0xFF0D1117),
+        color: AppTheme.darkBackground,
         border: Border(
-          top: BorderSide(color: Color(0xFF30363D), width: 1),
+          top: BorderSide(color: AppTheme.borderColor, width: 1),
         ),
       ),
       padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 12),
@@ -644,7 +644,7 @@ class _TaskListTableState extends State<TaskListTable> {
             width: 48,
             child: Text(
               '${widget.tasks.length + 1}',
-              style: const TextStyle(color: Color(0xFF484F58), fontSize: 13),
+              style: const TextStyle(color: AppTheme.borderColor, fontSize: 13),
             ),
           ),
           SizedBox(
@@ -692,11 +692,11 @@ class _TaskListTableState extends State<TaskListTable> {
                       ),
                       decoration: BoxDecoration(
                         border: Border.all(
-                          color: const Color(0xFF30363D),
+                          color: AppTheme.borderColor,
                           width: 1,
                         ),
                         borderRadius: BorderRadius.circular(5),
-                        color: const Color(0xFF161B22),
+                        color: AppTheme.cardBackground,
                       ),
                       child: Row(
                         children: [
@@ -709,7 +709,7 @@ class _TaskListTableState extends State<TaskListTable> {
                           Text(
                             'Add new task...',
                             style: const TextStyle(
-                              color: Color(0xFF8B949E),
+                              color: AppTheme.textSecondary,
                               fontSize: 13,
                             ),
                           ),
@@ -926,10 +926,10 @@ class _TextFieldCellState extends State<_TextFieldCell> {
       return TextField(
         controller: _controller,
         autofocus: true,
-        style: const TextStyle(color: Color(0xFFE6EDF3), fontSize: 13),
+        style: const TextStyle(color: AppTheme.textPrimary, fontSize: 13),
         decoration: const InputDecoration(
           isDense: true,
-          border: OutlineInputBorder(borderSide: BorderSide(color: Color(0xFF30363D))),
+          border: OutlineInputBorder(borderSide: BorderSide(color: AppTheme.borderColor)),
           contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
         ),
         onSubmitted: (_) => _submit(),
@@ -944,7 +944,7 @@ class _TextFieldCellState extends State<_TextFieldCell> {
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
         child: Text(
           widget.value?.isEmpty ?? true ? '-' : widget.value!,
-          style: const TextStyle(color: Color(0xFFE6EDF3), fontSize: 13),
+          style: const TextStyle(color: AppTheme.textPrimary, fontSize: 13),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
@@ -971,7 +971,7 @@ class _SingleSelectFieldCell extends StatelessWidget {
     if (options.isEmpty) {
       return Text(
         value ?? '-',
-        style: const TextStyle(color: Color(0xFFE6EDF3), fontSize: 13),
+        style: const TextStyle(color: AppTheme.textPrimary, fontSize: 13),
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
       );
@@ -1003,7 +1003,7 @@ class _SingleSelectFieldCell extends StatelessWidget {
               child: Text(
                 value ?? '-',
                 style: TextStyle(
-                  color: value != null ? color : const Color(0xFF8B949E),
+                  color: value != null ? color : AppTheme.textSecondary,
                   fontSize: 13,
                 ),
                 maxLines: 1,
@@ -1050,7 +1050,7 @@ class _DateFieldCell extends StatelessWidget {
             Expanded(
               child: Text(
                 _formatDate(value),
-                style: const TextStyle(color: Color(0xFF8B949E), fontSize: 13),
+                style: const TextStyle(color: AppTheme.textSecondary, fontSize: 13),
               ),
             ),
             Icon(Icons.calendar_today, size: 14, color: Colors.grey[600]),
@@ -1073,7 +1073,7 @@ class _AssigneesCell extends StatelessWidget {
       padding: EdgeInsets.symmetric(horizontal: 8),
       child: Text(
         'Unassigned',
-        style: TextStyle(color: Color(0xFF484F58), fontSize: 12),
+        style: TextStyle(color: AppTheme.borderColor, fontSize: 12),
       ),
     );
   }

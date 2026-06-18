@@ -13,6 +13,7 @@ import '../tasks_list/view/tasks_list_page.dart';
 import '../tasks_list/cubit/tasks_list_cubit.dart';
 import '../board/widgets/task_editor_sheet.dart';
 import '../integrations/view/integrations_page.dart';
+import 'package:DMAAS/src/theme/app_theme.dart';
 
 class MainNavigationPage extends StatefulWidget {
   const MainNavigationPage({super.key});
@@ -86,10 +87,10 @@ class _MainNavigationPageState extends State<MainNavigationPage>
                       padding: const EdgeInsets.symmetric(
                           horizontal: 10, vertical: 4),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF21262D),
+                        color: AppTheme.surfaceBackground,
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(
-                            color: const Color(0xFFBB86FC).withAlpha(80)),
+                            color: AppTheme.accentPurple.withAlpha(80)),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
@@ -101,7 +102,7 @@ class _MainNavigationPageState extends State<MainNavigationPage>
                             '${boostState.credits}',
                             style: const TextStyle(
                               fontSize: 12,
-                              color: Color(0xFFBB86FC),
+                              color: AppTheme.accentPurple,
                               fontWeight: FontWeight.w700,
                             ),
                           ),
@@ -141,7 +142,7 @@ class _MainNavigationPageState extends State<MainNavigationPage>
                           authState.user?.email ?? 'User',
                           style: const TextStyle(
                             fontWeight: FontWeight.w600,
-                            color: Color(0xFFC9D1D9),
+                            color: AppTheme.textPrimary,
                           ),
                         ),
                       ),
@@ -150,7 +151,7 @@ class _MainNavigationPageState extends State<MainNavigationPage>
                         value: 'integrations',
                         child: Row(
                           children: [
-                            Icon(Icons.extension, size: 20, color: Color(0xFF8B949E)),
+                            Icon(Icons.extension, size: 20, color: AppTheme.textSecondary),
                             SizedBox(width: 12),
                             Text('Integrations'),
                           ],
@@ -160,7 +161,7 @@ class _MainNavigationPageState extends State<MainNavigationPage>
                         value: 'signout',
                         child: Row(
                           children: [
-                            Icon(Icons.logout, size: 20, color: Color(0xFF8B949E)),
+                            Icon(Icons.logout, size: 20, color: AppTheme.textSecondary),
                             SizedBox(width: 12),
                             Text('Sign Out'),
                           ],
@@ -221,7 +222,7 @@ class _MainNavigationPageState extends State<MainNavigationPage>
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF161B22),
+        backgroundColor: AppTheme.cardBackground,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Row(
           children: [
@@ -238,22 +239,22 @@ class _MainNavigationPageState extends State<MainNavigationPage>
               children: [
                 Text(
                   'You have ${state.credits} credits remaining.',
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Color(0xFFE6EDF3)),
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: AppTheme.textPrimary),
                 ),
                 const SizedBox(height: 16),
                 const Text(
                   'Use credits to "Boost" tasks. Get help breaking down complex tasks, writing descriptions, and suggesting subtasks.',
-                  style: TextStyle(color: Color(0xFF8B949E)),
+                  style: TextStyle(color: AppTheme.textSecondary),
                 ),
                 const SizedBox(height: 12),
                 const Text(
                   'Credits refresh automatically based on your plan.',
-                  style: TextStyle(color: Color(0xFF8B949E), fontSize: 12, fontStyle: FontStyle.italic),
+                  style: TextStyle(color: AppTheme.textSecondary, fontSize: 12, fontStyle: FontStyle.italic),
                 ),
                 const SizedBox(height: 20),
                 const Text(
                   'Purchase More Credits',
-                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFFE6EDF3)),
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppTheme.textPrimary),
                 ),
                 const SizedBox(height: 10),
                 Row(
@@ -261,9 +262,9 @@ class _MainNavigationPageState extends State<MainNavigationPage>
                     Expanded(
                       child: ElevatedButton(
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF21262D),
-                          foregroundColor: const Color(0xFFBB86FC),
-                          side: BorderSide(color: const Color(0xFFBB86FC).withAlpha(80)),
+                          backgroundColor: AppTheme.surfaceBackground,
+                          foregroundColor: AppTheme.accentPurple,
+                          side: BorderSide(color: AppTheme.accentPurple.withAlpha(80)),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                         ),
                         onPressed: () {
@@ -276,7 +277,7 @@ class _MainNavigationPageState extends State<MainNavigationPage>
                     Expanded(
                       child: ElevatedButton(
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFBB86FC),
+                          backgroundColor: AppTheme.accentPurple,
                           foregroundColor: Colors.black,
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                         ),
