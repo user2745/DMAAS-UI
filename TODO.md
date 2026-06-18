@@ -19,9 +19,9 @@
 - [ ] Replace all instances with `AppTheme` constant references
 
 ### Brand Assets
-- [ ] Replace default Flutter favicon with Activities logo
-- [ ] Replace `web/icons/Icon-192.png` and `Icon-512.png` with Activities icon
-- [ ] Replace maskable icons
+- [x] Replace default Flutter favicon with Activities logo
+- [x] Replace `web/icons/Icon-192.png` and `Icon-512.png` with Activities icon
+- [x] Replace maskable icons
 - [x] Add Activities logo PNG to `assets/images/` directory
 - [x] Update `pubspec.yaml` to declare assets directory
 - [x] Use logo asset in login page and navigation bar
