@@ -12,6 +12,7 @@ import '../today/today_tasks_page.dart';
 import '../tasks_list/view/tasks_list_page.dart';
 import '../tasks_list/cubit/tasks_list_cubit.dart';
 import '../board/widgets/task_editor_sheet.dart';
+import '../integrations/view/integrations_page.dart';
 
 class MainNavigationPage extends StatefulWidget {
   const MainNavigationPage({super.key});
@@ -51,13 +52,24 @@ class _MainNavigationPageState extends State<MainNavigationPage>
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          'DMAAS',
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.w800,
-            letterSpacing: 0.5,
-          ),
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Image.asset(
+              'assets/images/logo.png',
+              height: 28,
+              width: 28,
+            ),
+            const SizedBox(width: 10),
+            const Text(
+              'Activities',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 0.5,
+              ),
+            ),
+          ],
         ),
         actions: [
           // ⚡ Credit badge
@@ -114,6 +126,12 @@ class _MainNavigationPageState extends State<MainNavigationPage>
                     onSelected: (value) {
                       if (value == 'signout') {
                         context.read<AuthCubit>().signOut();
+                      } else if (value == 'integrations') {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) => const IntegrationsPage(),
+                          ),
+                        );
                       }
                     },
                     itemBuilder: (context) => [
@@ -128,6 +146,16 @@ class _MainNavigationPageState extends State<MainNavigationPage>
                         ),
                       ),
                       const PopupMenuDivider(),
+                      const PopupMenuItem<String>(
+                        value: 'integrations',
+                        child: Row(
+                          children: [
+                            Icon(Icons.extension, size: 20, color: Color(0xFF8B949E)),
+                            SizedBox(width: 12),
+                            Text('Integrations'),
+                          ],
+                        ),
+                      ),
                       const PopupMenuItem<String>(
                         value: 'signout',
                         child: Row(

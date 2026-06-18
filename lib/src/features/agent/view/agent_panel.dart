@@ -139,7 +139,7 @@ class _AgentPanelBodyState extends State<_AgentPanelBody> {
                     const SizedBox(width: 8),
                     const Expanded(
                       child: Text(
-                        'DMAAS Agent',
+                        'Activities Agent',
                         style: TextStyle(
                           fontSize: 17,
                           fontWeight: FontWeight.w700,

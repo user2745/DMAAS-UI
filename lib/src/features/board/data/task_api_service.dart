@@ -3,16 +3,19 @@ import 'package:http/http.dart' as http;
 
 import '../models/task.dart';
 import '../models/task_comment.dart';
+import '../../agent/data/webhook_dispatcher.dart';
 
 class TaskApiService {
   final String baseUrl;
   final http.Client httpClient;
   final Future<String?> Function()? tokenProvider;
+  final WebhookDispatcher? webhookDispatcher;
 
   TaskApiService({
     this.baseUrl = const String.fromEnvironment('API_BASE_URL', defaultValue: 'https://dmaas.capitalintelligence.online'),
     http.Client? httpClient,
     this.tokenProvider,
+    this.webhookDispatcher,
   }) : httpClient = httpClient ?? http.Client();
 
   Future<Map<String, String>> _headers({bool json = true}) async {
@@ -78,7 +81,9 @@ class TaskApiService {
       );
 
       if (response.statusCode == 201 || response.statusCode == 200) {
-        return Task.fromJson(jsonDecode(response.body));
+        final task = Task.fromJson(jsonDecode(response.body));
+        webhookDispatcher?.taskCreated(jsonDecode(response.body));
+        return task;
       } else {
         throw Exception('Failed to create task: ${response.statusCode}');
       }
@@ -126,7 +131,9 @@ class TaskApiService {
       );
 
       if (response.statusCode == 200) {
-        return Task.fromJson(jsonDecode(response.body));
+        final task = Task.fromJson(jsonDecode(response.body));
+        webhookDispatcher?.taskUpdated(jsonDecode(response.body));
+        return task;
       } else {
         throw Exception('Failed to update task: ${response.statusCode}');
       }
@@ -164,6 +171,7 @@ class TaskApiService {
       if (response.statusCode != 200 && response.statusCode != 204) {
         throw Exception('Failed to delete task: ${response.statusCode}');
       }
+      webhookDispatcher?.taskDeleted(taskId);
     } catch (e) {
       throw Exception('Error deleting task: $e');
     }

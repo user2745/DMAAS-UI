@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../cubit/auth_cubit.dart';
 import '../cubit/auth_state.dart';
 import '../../../widgets/animated_focus_text_field.dart';
+import '../../../theme/app_theme.dart';
 
 // Design Language: High-contrast dark theme with consistent input animations
 // See DESIGN_LANGUAGE.md for color and typography specifications
@@ -75,7 +76,7 @@ class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0D1117),
+      backgroundColor: AppTheme.darkBackground,
       body: BlocListener<AuthCubit, AuthState>(
         listener: (context, state) {
           if (state.status == AuthStatus.authenticated) {
@@ -107,19 +108,25 @@ class _LoginPageState extends State<LoginPage> {
                         child: IconButton(
                           padding: EdgeInsets.zero,
                           constraints: const BoxConstraints(minWidth: 40),
-                          icon: const Icon(Icons.arrow_back, color: Color(0xFFC9D1D9)),
+                          icon: const Icon(Icons.arrow_back, color: AppTheme.textPrimary),
                           onPressed: () => Navigator.of(context).pop(),
                         ),
                       ),
                       const SizedBox(height: 8),
 
                       // Logo/Title
+                      Image.asset(
+                        'assets/images/logo.png',
+                        height: 80,
+                        width: 80,
+                      ),
+                      const SizedBox(height: 16),
                       const Text(
-                        'DMAAS',
+                        'Activities',
                         style: TextStyle(
                           fontSize: 48,
                           fontWeight: FontWeight.w700,
-                          color: Color(0xFF58A6FF),
+                          color: AppTheme.accentBlue,
                           letterSpacing: 2,
                         ),
                         textAlign: TextAlign.center,
@@ -134,7 +141,7 @@ class _LoginPageState extends State<LoginPage> {
                         style: const TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.w600,
-                          color: Color(0xFFC9D1D9),
+                          color: AppTheme.textPrimary,
                         ),
                         textAlign: TextAlign.center,
                       ),
@@ -146,7 +153,7 @@ class _LoginPageState extends State<LoginPage> {
                         keyboardType: TextInputType.emailAddress,
                         labelText: 'Email',
                         filled: true,
-                        fillColor: const Color(0xFF21262D),
+                        fillColor: AppTheme.surfaceBackground,
                         validator: (value) {
                           if (value == null || value.isEmpty) {
                             return 'Please enter your email';
@@ -166,11 +173,11 @@ class _LoginPageState extends State<LoginPage> {
                           obscureText: !_isPasswordVisible,
                           labelText: 'Password',
                           filled: true,
-                          fillColor: const Color(0xFF21262D),
+                          fillColor: AppTheme.surfaceBackground,
                           suffixIcon: IconButton(
                             icon: Icon(
                               _isPasswordVisible ? Icons.visibility : Icons.visibility_off,
-                              color: const Color(0xFF8B949E),
+                              color: AppTheme.textSecondary,
                             ),
                             onPressed: () {
                               setState(() => _isPasswordVisible = !_isPasswordVisible);
@@ -196,13 +203,13 @@ class _LoginPageState extends State<LoginPage> {
                           obscureText: !_isConfirmPasswordVisible,
                           labelText: 'Confirm Password',
                           filled: true,
-                          fillColor: const Color(0xFF21262D),
+                          fillColor: AppTheme.surfaceBackground,
                           suffixIcon: IconButton(
                             icon: Icon(
                               _isConfirmPasswordVisible
                                   ? Icons.visibility
                                   : Icons.visibility_off,
-                              color: const Color(0xFF8B949E),
+                              color: AppTheme.textSecondary,
                             ),
                             onPressed: () {
                               setState(
@@ -233,7 +240,7 @@ class _LoginPageState extends State<LoginPage> {
                             },
                             child: const Text(
                               'Forgot Password?',
-                              style: TextStyle(color: Color(0xFF58A6FF)),
+                              style: TextStyle(color: AppTheme.accentBlue),
                             ),
                           ),
                         ),
@@ -244,7 +251,7 @@ class _LoginPageState extends State<LoginPage> {
                       ElevatedButton(
                         onPressed: _isLoading ? null : _handleSubmit,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF58A6FF),
+                          backgroundColor: AppTheme.accentBlue,
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(vertical: 16),
                           shape: RoundedRectangleBorder(
@@ -287,7 +294,7 @@ class _LoginPageState extends State<LoginPage> {
                             _isSignUp
                                 ? 'Already have an account? Sign In'
                                 : 'Need an account? Create Account',
-                            style: const TextStyle(color: Color(0xFF8B949E)),
+                            style: const TextStyle(color: AppTheme.textSecondary),
                           ),
                         ),
 
@@ -302,7 +309,7 @@ class _LoginPageState extends State<LoginPage> {
                           },
                           child: const Text(
                             'Back to Sign In',
-                            style: TextStyle(color: Color(0xFF8B949E)),
+                            style: TextStyle(color: AppTheme.textSecondary),
                           ),
                         ),
                     ],
